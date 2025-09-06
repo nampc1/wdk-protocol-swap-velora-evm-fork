@@ -14,10 +14,10 @@
 
 'use strict'
 
-/** @typedef {import('@wdk/wallet/protocols').SwapOptions} SwapOptions */
-
 /** @typedef {import('@wdk/wallet/protocols').SwapProtocolConfig} SwapProtocolConfig */
 
-/** @typedef {import('@wdk/wallet/protocols').SwapResult} SwapResult */
+/** @typedef {import('@wdk/wallet/protocols').SwapOptions} SwapOptions */
+
+/** @typedef {import('./src/paraswap-protocol-evm.js').ParaSwapResult} ParaSwapResult */
 
 export { default } from './src/paraswap-protocol-evm.js'

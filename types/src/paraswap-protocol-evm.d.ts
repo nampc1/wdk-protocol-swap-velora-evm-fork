@@ -1,51 +1,78 @@
-/** @typedef {import('@wdk/wallet/protocols').SwapOptions} SwapOptions */
-/** @typedef {import('@wdk/wallet/protocols').SwapProtocolConfig} SwapProtocolConfig */
-/** @typedef {import('@wdk/wallet/protocols').SwapResult} SwapResult */
-/** @typedef {import('@wdk/wallet-evm-erc-4337').EvmErc4337WalletConfig} EvmErc4337WalletConfig */
-/**
- * @template {WalletAccountEvm | WalletAccountEvmErc4337} T
- * @typedef {Pick<SwapProtocolConfig, 'swapMaxFee'> & (T extends WalletAccountEvmErc4337 ? Pick<EvmErc4337WalletConfig, 'paymasterToken'> : {})} SwapConfigOverride
- */
-/**
- * @template {WalletAccountEvm | WalletAccountEvmErc4337} T
- * @typedef {(T extends WalletAccountEvmErc4337 ? Pick<EvmErc4337WalletConfig, 'paymasterToken'> : {})} QuoteSwapConfigOverride
- */
-/**
- * @template {WalletAccountEvm | WalletAccountEvmErc4337} T
- */
-export default class ParaSwapProtocolEVM<T extends WalletAccountEvm | WalletAccountEvmErc4337> extends SwapProtocol {
+export default class ParaSwapProtocolEvm extends SwapProtocol {
     /**
-     * Creates a new interface to the paraswap protocol for evm blockchains.`
+     * Creates a new read-only interface to the paraswap protocol for evm blockchains.
      *
-     * @param {T} account - The wallet account to use to interact with the protocol.
+     * @overload
+     * @param {WalletAccountReadOnlyEvm | WalletAccountReadOnlyEvmErc4337} account - The wallet account to use to interact with the protocol.
      * @param {SwapProtocolConfig} [config] - The swap protocol configuration.
      */
-    constructor(account: T, config?: SwapProtocolConfig);
-    _provider: JsonRpcProvider | BrowserProvider;
+    constructor(account: WalletAccountReadOnlyEvm | WalletAccountReadOnlyEvmErc4337, config?: SwapProtocolConfig);
     /**
-     * @private
-     * @type {Promise<import('@velora-dex/sdk').SimpleFetchSDK>}
+     * Creates a new interface to the paraswap protocol for evm blockchains.
+     *
+     * @overload
+     * @param {WalletAccountEvm | WalletAccountEvmErc4337} account - The wallet account to use to interact with the protocol.
+     * @param {SwapProtocolConfig} [config] - The swap protocol configuration.
      */
-    private _veloraSdkPromise;
+    constructor(account: WalletAccountEvm | WalletAccountEvmErc4337, config?: SwapProtocolConfig);
     /** @private */
-    private _getSwapTransactions;
+    private _veloraSdk;
+    _provider: JsonRpcProvider | BrowserProvider;
     /**
      * Swaps a pair of tokens.
      *
-     * @abstract
      * @param {SwapOptions} options - The swap's options.
-     * @param {SwapConfigOverride<T>} [config] - If set, overrides the 'swapMaxFee' and 'paymasterToken' options defined in the manager configuration.
-     * @returns {Promise<SwapResult>} The swap's result.
+     * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'> & Pick<SwapProtocolConfig, 'swapMaxFee'>} [config] - If the protocol has
+     *   been initialized with an erc-4337 wallet account, overrides the 'paymasterToken' option defined in its configuration and the
+     *   'swapMaxFee' option defined in the protocol configuration.
+     * @returns {Promise<ParaSwapResult>} The swap's result.
      */
-    swap(options: SwapOptions, config?: SwapConfigOverride<T>): Promise<SwapResult>;
+    swap(options: SwapOptions, config?: Pick<EvmErc4337WalletConfig, "paymasterToken"> & Pick<SwapProtocolConfig, "swapMaxFee">): Promise<ParaSwapResult>;
+    /**
+     * Quotes the costs of a swap operation.
+     *
+     * @param {SwapOptions} options - The swap's options.
+     * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'>} [config] - If the protocol has been initialized with an erc-4337
+     *   wallet account, overrides the 'paymasterToken' option defined in its configuration.
+     * @returns {Promise<Omit<ParaSwapResult, 'hash' | 'approveHash'>>} The swap's quotes.
+     */
+    quoteSwap(options: SwapOptions, config?: Pick<EvmErc4337WalletConfig, "paymasterToken">): Promise<Omit<ParaSwapResult, "hash" | "approveHash">>;
+    /** @private */
+    private _getVeloraSdk;
+    /** @private */
+    private _getSwapTransactions;
 }
-export type SwapOptions = import("@wdk/wallet/protocols").SwapOptions;
 export type SwapProtocolConfig = import("@wdk/wallet/protocols").SwapProtocolConfig;
-export type SwapResult = import("@wdk/wallet/protocols").SwapResult;
+export type SwapOptions = import("@wdk/wallet/protocols").SwapOptions;
 export type EvmErc4337WalletConfig = import("@wdk/wallet-evm-erc-4337").EvmErc4337WalletConfig;
-export type SwapConfigOverride<T extends WalletAccountEvm | WalletAccountEvmErc4337> = Pick<SwapProtocolConfig, "swapMaxFee"> & (T extends WalletAccountEvmErc4337 ? Pick<EvmErc4337WalletConfig, "paymasterToken"> : {});
-export type QuoteSwapConfigOverride<T extends WalletAccountEvm | WalletAccountEvmErc4337> = (T extends WalletAccountEvmErc4337 ? Pick<EvmErc4337WalletConfig, "paymasterToken"> : {});
+export type ParaSwapResult = {
+    /**
+     * - The hash of the swap operation.
+     */
+    hash: string;
+    /**
+     * - The gas cost.
+     */
+    fee: bigint;
+    /**
+     * - The amount of input tokens sold.
+     */
+    tokenInAmount: bigint;
+    /**
+     * -  The amount of output tokens bought.
+     */
+    tokenOutAmount: bigint;
+    /**
+     * - If the protocol has been initialized with a normal wallet account, this field will contain the hash
+     * of the approve call to allow paraswap to spend the input tokens. If the protocol has been initialized with an erc-4337 wallet account,
+     * this field will be undefined (since the approve call will be bundled in the user operation with hash {@link ParaSwapResult#hash}).
+     */
+    approveHash?: string;
+};
+import { SwapProtocol } from '@wdk/wallet/protocols';
+import { JsonRpcProvider } from 'ethers';
+import { BrowserProvider } from 'ethers';
+import { WalletAccountReadOnlyEvm } from '@wdk/wallet-evm';
+import { WalletAccountReadOnlyEvmErc4337 } from '@wdk/wallet-evm-erc-4337';
 import { WalletAccountEvm } from '@wdk/wallet-evm';
 import { WalletAccountEvmErc4337 } from '@wdk/wallet-evm-erc-4337';
-import { SwapProtocol } from '@wdk/wallet/protocols';
-import { BrowserProvider, JsonRpcProvider} from 'ethers';

@@ -2,401 +2,543 @@ import { beforeEach, describe, expect, jest, test } from '@jest/globals'
 
 import * as ethers from 'ethers'
 
+import * as veloraDexSdk from '@velora-dex/sdk'
+
 import { WalletAccountEvm, WalletAccountReadOnlyEvm } from '@wdk/wallet-evm'
+
 import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@wdk/wallet-evm-erc-4337'
 
-const TOKEN_ADDRESS_1 = '0x1111111111111111111111111111111111111111'
-const TOKEN_ADDRESS_2 = '0x2222222222222222222222222222222222222222'
+const { SwapSide } = veloraDexSdk
 
-const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
-const ABSTRACTED_ADDRESS = '0x120Ac3c0B46fBAf2e8452A23BD61a2Da9B139551'
+const SEED = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
-const CHAIN_ID = 1
+const USER_ADDRESS = '0xa460AEbce0d3A4BecAd8ccf9D6D4861296c503Bd'
 
-const EXPECTED_SWAP_RESULT = {
-  hash: '0x1234567890',
-  approvalHash: '0x1234567890',
-  fee: 1000000,
-  tokenInAmount: 1000000,
-  tokenOutAmount: 1000
-}
+const TOKEN_IN = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+const TOKEN_OUT = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+const PARASWAP = '0xf90e98F3D8Dce44632E5020ABF2E122E0f99DFAb'
 
-const SWAP_OPTIONS = {
-  tokenIn: TOKEN_ADDRESS_1,
-  tokenOut: TOKEN_ADDRESS_2,
-  tokenInAmount: EXPECTED_SWAP_RESULT.tokenInAmount
-}
+const getRateMock = jest.fn()
 
-const VELORA_SDK_MOCK = Promise.resolve({
-  swap: {
-    getRate: jest.fn().mockResolvedValue({
-      srcToken: TOKEN_ADDRESS_1,
-      destToken: TOKEN_ADDRESS_2,
-      srcAmount: EXPECTED_SWAP_RESULT.tokenInAmount.toString(),
-      destAmount: EXPECTED_SWAP_RESULT.tokenOutAmount.toString()
-    }),
-    buildTx: jest.fn().mockResolvedValue({
-      to: '0x6a000f20005980200259b80c5102003040001068',
-      data: '0x1234567890'
-    })
+const buildTxMock = jest.fn()
+
+jest.unstable_mockModule('ethers', () => ({
+  ...ethers,
+  JsonRpcProvider: jest.fn().mockImplementation(() => ({
+    getNetwork: jest.fn().mockResolvedValue({ chainId: 1n })
+  }))
+}))
+
+jest.unstable_mockModule('@velora-dex/sdk', () => ({
+  ...veloraDexSdk,
+  constructSimpleSDK: jest.fn().mockReturnValue({
+    swap: {
+      getRate: getRateMock,
+      buildTx: buildTxMock
+    }
+  })
+}))
+
+const { default: ParaSwapProtocolEvm } = await import('../index.js')
+
+describe('ParaSwapProtocolEvm', () => {
+  const DUMMY_PRICE_ROUTE = {
+    srcToken: TOKEN_IN,
+    destToken: TOKEN_OUT,
+    srcAmount: '100',
+    destAmount: '100000'
   }
-})
 
-await jest.unstable_mockModule('ethers', async () => {
-  return {
-    ...ethers,
-    JsonRpcProvider: jest.fn().mockImplementation(() => ({
-      getNetwork: jest.fn().mockResolvedValue({ chainId: BigInt(CHAIN_ID) })
-    }))
+  const DUMMY_APPROVE_TRANSACTION = {
+    to: TOKEN_IN,
+    value: 0,
+    data: '0x095ea7b3000000000000000000000000f90e98f3d8dce44632e5020abf2e122e0f99dfab0000000000000000000000000000000000000000000000000000000000000064'
   }
-})
 
-const { default: ParaSwapProtocolEVM } = await import('../index.js')
+  const DUMMY_SWAP_TRANSACTION = {
+    to: PARASWAP,
+    value: 0,
+    data: 'dummy-swap-method-data'
+  }
 
-describe('ParaSwapProtocolEVM', () => {
-  let accountEvm
-  let paraswapProtocolEvm
+  let account,
+      protocol
 
-  let accountEvmErc4337
-  let paraswapProtocolEvmErc4337
-
-  describe('WalletAccountEvm', () => {
+  describe('with WalletAccountEvm', () => {
     beforeEach(() => {
-      accountEvm = new WalletAccountEvm(SEED_PHRASE, "0'/0/0", { provider: 'https://mock-rpc-url.com' })
-
-      const sendTransactionFee = EXPECTED_SWAP_RESULT.fee / 2 // fee is halved because there are two transactions: approval and bridge
-
-      accountEvm.quoteSendTransaction = jest.fn().mockResolvedValue({
-        fee: sendTransactionFee
+      account = new WalletAccountEvm(SEED, "0'/0/0", {
+        provider: 'https://mock-rpc-url.com'
       })
 
-      accountEvm.sendTransaction = jest.fn().mockImplementation((tx) => ({
-        fee: sendTransactionFee,
-        hash: tx.to === TOKEN_ADDRESS_1 ? EXPECTED_SWAP_RESULT.approvalHash : EXPECTED_SWAP_RESULT.hash
-      }))
+      account.getAddress = jest.fn().mockResolvedValue(USER_ADDRESS)
 
-      paraswapProtocolEvm = new ParaSwapProtocolEVM(accountEvm)
-
-      paraswapProtocolEvm._veloraSdkPromise = VELORA_SDK_MOCK
-    })
-
-    describe('quoteSwap', () => {
-      test('should return the expected quote result', async () => {
-        const qoute = await paraswapProtocolEvm.quoteSwap(SWAP_OPTIONS)
-
-        expect(qoute.fee).toBe(EXPECTED_SWAP_RESULT.fee)
-        expect(qoute.tokenInAmount).toBe(EXPECTED_SWAP_RESULT.tokenInAmount)
-        expect(qoute.tokenOutAmount).toBe(EXPECTED_SWAP_RESULT.tokenOutAmount)
-      })
-
-      test('should throw when tokenIn and tokenOut are equal', async () => {
-        const INVALID_SWAP_OPTIOONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_1,
-          tokenInAmount: EXPECTED_SWAP_RESULT.tokenInAmount
-        }
-
-        await expect(paraswapProtocolEvm.quoteSwap(INVALID_SWAP_OPTIOONS)).rejects.toThrow("'tokenIn' and 'tokenOut' cannot be equal.")
-      })
-
-      test('should throw when neither tokenInAmount nor tokenOutAmount is provided', async () => {
-        const INVALID_SWAP_OPTIOONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2
-        }
-
-        await expect(paraswapProtocolEvm.quoteSwap(INVALID_SWAP_OPTIOONS)).rejects.toThrow("A valid 'tokenInAmount' or 'tokenOutAmount' must be passed.")
-      })
-
-      test('should throw when both tokenInAmount and tokenOutAmount are provided', async () => {
-        const INVALID_SWAP_OPTIOONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2,
-          tokenInAmount: EXPECTED_SWAP_RESULT.tokenInAmount,
-          tokenOutAmount: EXPECTED_SWAP_RESULT.tokenOutAmount
-        }
-
-        await expect(paraswapProtocolEvm.quoteSwap(INVALID_SWAP_OPTIOONS)).rejects.toThrow("Cannot use both 'tokenInAmount' and 'tokenOutAmount' arguments.")
-      })
-
-      test('should work with tokenOutAmount provided', async () => {
-        const SWAP_OPTIOONS_WITH_TOKEN_OUT_AMOUNT = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2,
-          tokenOutAmount: EXPECTED_SWAP_RESULT.tokenOutAmount
-        }
-
-        const quote = await paraswapProtocolEvm.quoteSwap(SWAP_OPTIOONS_WITH_TOKEN_OUT_AMOUNT)
-
-        expect(quote.fee).toBe(EXPECTED_SWAP_RESULT.fee)
-        expect(quote.tokenInAmount).toBe(EXPECTED_SWAP_RESULT.tokenInAmount)
-        expect(quote.tokenOutAmount).toBe(EXPECTED_SWAP_RESULT.tokenOutAmount)
-      })
-
-      test('should throw if the account is not connected to a provider', async () => {
-        const account = new WalletAccountEvm(SEED_PHRASE, "0'/0/0")
-        const usdt0ProtocolEvm = new ParaSwapProtocolEVM(account)
-
-        await expect(usdt0ProtocolEvm.quoteSwap(SWAP_OPTIONS)).rejects.toThrow('The wallet must be connected to a provider to quote swap.')
-      })
+      protocol = new ParaSwapProtocolEvm(account)
     })
 
     describe('swap', () => {
-      test('should return the expected swap result', async () => {
-        const result = await paraswapProtocolEvm.swap(SWAP_OPTIONS)
+      beforeEach(() => {
+        getRateMock.mockResolvedValue(DUMMY_PRICE_ROUTE)
 
-        expect(result.hash).toBe(EXPECTED_SWAP_RESULT.hash)
-        expect(result.approvalHash).toBe(EXPECTED_SWAP_RESULT.approvalHash)
-        expect(result.fee).toBe(EXPECTED_SWAP_RESULT.fee)
-        expect(result.tokenInAmount).toBe(EXPECTED_SWAP_RESULT.tokenInAmount)
-        expect(result.tokenOutAmount).toBe(EXPECTED_SWAP_RESULT.tokenOutAmount)
+        buildTxMock.mockResolvedValue(DUMMY_SWAP_TRANSACTION)
+
+        account.quoteSendTransaction = jest.fn()
+          .mockResolvedValueOnce({ fee: 12_345n })
+          .mockResolvedValueOnce({ fee: 67_890n })
+
+        account.sendTransaction = jest.fn()
+          .mockResolvedValueOnce({ hash: 'dummy-approve-hash', fee: 12_345n })
+          .mockResolvedValueOnce({ hash: 'dummy-swap-hash', fee: 67_890n })
       })
 
-      test('should throw when tokenIn and tokenOut are equal', async () => {
-        const INVALID_SWAP_OPTIONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_1,
-          tokenInAmount: EXPECTED_SWAP_RESULT.tokenInAmount
+      test('should successfully execute a swap (buy)', async () => {
+        const result = await protocol.swap({
+          tokenIn: TOKEN_IN,
+          tokenOut: TOKEN_OUT,
+          tokenOutAmount: 100_000
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: TOKEN_IN,
+          destToken: TOKEN_OUT,
+          amount: '100000',
+          side: SwapSide.BUY
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith({
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }, {
+          ignoreChecks: true
+        })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
+
+        expect(account.sendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
+        expect(account.sendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
+
+        expect(result).toEqual({
+          approveHash: 'dummy-approve-hash',
+          hash: 'dummy-swap-hash',
+          fee: 80_235n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
+      test('should successfully execute a swap (sell)', async () => {
+        const result = await protocol.swap({
+          tokenIn: TOKEN_IN,
+          tokenOut: TOKEN_OUT,
+          tokenInAmount: 100
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: TOKEN_IN,
+          destToken: TOKEN_OUT,
+          amount: '100',
+          side: SwapSide.SELL
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith({
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }, {
+          ignoreChecks: true
+        })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
+
+        expect(account.sendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
+        expect(account.sendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
+
+        expect(result).toEqual({
+          approveHash: 'dummy-approve-hash',
+          hash: 'dummy-swap-hash',
+          fee: 80_235n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
+      test('should throw if the swap fee exceeds the swap max fee configuration', async () => {
+        const OPTIONS = {
+          tokenIn: TOKEN_IN,
+          tokenOut: TOKEN_OUT,
+          tokenOutAmount: 100_000
         }
 
-        await expect(paraswapProtocolEvm.swap(INVALID_SWAP_OPTIONS)).rejects.toThrow("'tokenIn' and 'tokenOut' cannot be equal.")
-      })
+        const protocol = new ParaSwapProtocolEvm(account, {
+          swapMaxFee: 0
+        })
 
-      test('should throw when neither tokenInAmount nor tokenOutAmount is provided', async () => {
-        const INVALID_SWAP_OPTIONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2
-        }
-
-        await expect(paraswapProtocolEvm.swap(INVALID_SWAP_OPTIONS)).rejects.toThrow("A valid 'tokenInAmount' or 'tokenOutAmount' must be passed.")
-      })
-
-      test('should throw when both tokenInAmount and tokenOutAmount are provided', async () => {
-        const INVALID_SWAP_OPTIONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2,
-          tokenInAmount: EXPECTED_SWAP_RESULT.tokenInAmount,
-          tokenOutAmount: EXPECTED_SWAP_RESULT.tokenOutAmount
-        }
-
-        await expect(paraswapProtocolEvm.swap(INVALID_SWAP_OPTIONS)).rejects.toThrow("Cannot use both 'tokenInAmount' and 'tokenOutAmount' arguments.")
-      })
-
-      test('should swap with tokenOutAmount provided', async () => {
-        const SWAP_OPTIONS_WITH_TOKEN_OUT_AMOUNT = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2,
-          tokenOutAmount: EXPECTED_SWAP_RESULT.tokenOutAmount
-        }
-
-        const result = await paraswapProtocolEvm.swap(SWAP_OPTIONS_WITH_TOKEN_OUT_AMOUNT)
-
-        expect(result.hash).toBe(EXPECTED_SWAP_RESULT.hash)
-        expect(result.approvalHash).toBe(EXPECTED_SWAP_RESULT.approvalHash)
-        expect(result.fee).toBe(EXPECTED_SWAP_RESULT.fee)
-        expect(result.tokenInAmount).toBe(EXPECTED_SWAP_RESULT.tokenInAmount)
-        expect(result.tokenOutAmount).toBe(EXPECTED_SWAP_RESULT.tokenOutAmount)
-      })
-
-      test('should throw if the account is not connected to a provider', async () => {
-        const account = new WalletAccountEvm(SEED_PHRASE, "0'/0/0")
-        const usdt0ProtocolEvm = new ParaSwapProtocolEVM(account)
-
-        await expect(usdt0ProtocolEvm.swap(SWAP_OPTIONS)).rejects.toThrow('The wallet must be connected to a provider to swap.')
-      })
-
-      test('should throw when swapMaxFee is exceeded', async () => {
-        const config = { swapMaxFee: EXPECTED_SWAP_RESULT.fee - 1 }
-
-        await expect(paraswapProtocolEvm.swap(SWAP_OPTIONS, config)).rejects.toThrow('Exceeded maximum fee cost for swap operation.')
-      })
-
-      test('should work when swapMaxFee is not exceeded', async () => {
-        const config = { swapMaxFee: EXPECTED_SWAP_RESULT.fee + 1 }
-
-        const result = await paraswapProtocolEvm.swap(SWAP_OPTIONS, config)
-
-        expect(result.hash).toBe(EXPECTED_SWAP_RESULT.hash)
-        expect(result.approvalHash).toBe(EXPECTED_SWAP_RESULT.approvalHash)
-        expect(result.fee).toBe(EXPECTED_SWAP_RESULT.fee)
-        expect(result.tokenInAmount).toBe(EXPECTED_SWAP_RESULT.tokenInAmount)
-        expect(result.tokenOutAmount).toBe(EXPECTED_SWAP_RESULT.tokenOutAmount)
+        await expect(protocol.swap(OPTIONS))
+          .rejects.toThrow('Exceeded maximum fee cost for swap operation.')
       })
 
       test('should throw if the account is read only', async () => {
-        const readOnlyAccount = new WalletAccountReadOnlyEvm(ABSTRACTED_ADDRESS, { provider: 'https://mock-rpc-url.com' })
+        const account = new WalletAccountReadOnlyEvm(USER_ADDRESS, {
+          provider: 'https://mock-rpc-url.com'
+        })
 
-        const readOnlyProtocolEvm = new ParaSwapProtocolEVM(readOnlyAccount)
+        const protocol = new ParaSwapProtocolEvm(account)
 
-        await expect(readOnlyProtocolEvm.swap(SWAP_OPTIONS)).rejects.toThrow('Swap operation cannot be performed with a read-only account.')
+        await expect(protocol.swap({ }))
+          .rejects.toThrow("The 'swap(options)' method requires the protocol to be initialized with a non read-only account.")
+      })
+
+      test('should throw if the account is not connected to a provider', async () => {
+        const account = new WalletAccountEvm(SEED, "0'/0/0")
+
+        const protocol = new ParaSwapProtocolEvm(account)
+
+        await expect(protocol.swap({ }))
+          .rejects.toThrow('The wallet must be connected to a provider in order to perform swap operations.')
+      })
+    })
+
+    describe('quoteSwap', () => {
+      beforeEach(() => {
+        getRateMock.mockResolvedValue(DUMMY_PRICE_ROUTE)
+
+        buildTxMock.mockResolvedValue(DUMMY_SWAP_TRANSACTION)
+
+        account.quoteSendTransaction = jest.fn()
+          .mockResolvedValueOnce({ fee: 12_345n })
+          .mockResolvedValueOnce({ fee: 67_890n })
+      })
+
+      test('should successfully quote a swap (buy)', async () => {
+        const result = await protocol.quoteSwap({
+          tokenIn: TOKEN_IN,
+          tokenOut: TOKEN_OUT,
+          tokenOutAmount: 100_000
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: TOKEN_IN,
+          destToken: TOKEN_OUT,
+          amount: '100000',
+          side: SwapSide.BUY
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith({
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }, {
+          ignoreChecks: true
+        })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
+
+        expect(result).toEqual({
+          fee: 80_235n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
+      test('should successfully quote a swap (sell)', async () => {
+        const result = await protocol.quoteSwap({
+          tokenIn: TOKEN_IN,
+          tokenOut: TOKEN_OUT,
+          tokenInAmount: 100
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: TOKEN_IN,
+          destToken: TOKEN_OUT,
+          amount: '100',
+          side: SwapSide.SELL
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith({
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }, {
+          ignoreChecks: true
+        })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
+
+        expect(result).toEqual({
+          fee: 80_235n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
+      test('should throw if the account is not connected to a provider', async () => {
+        const account = new WalletAccountEvm(SEED, "0'/0/0")
+
+        const protocol = new ParaSwapProtocolEvm(account)
+
+        await expect(protocol.quoteSwap({ }))
+          .rejects.toThrow('The wallet must be connected to a provider in order to quote swap operations.')
       })
     })
   })
 
-  describe('WalletAccountEvmErc4337', () => {
+  describe('with WalletAccountEvmErc4337', () => {
     beforeEach(() => {
-      accountEvmErc4337 = new WalletAccountEvmErc4337(SEED_PHRASE, "0'/0/0", { provider: 'https://mock-rpc-url.com', chainId: CHAIN_ID })
-
-      accountEvmErc4337.quoteSendTransaction = jest.fn().mockResolvedValue({
-        fee: EXPECTED_SWAP_RESULT.fee
+      account = new WalletAccountEvmErc4337(SEED, "0'/0/0", {
+        chainId: 1,
+        provider: 'https://mock-rpc-url.com'
       })
 
-      accountEvmErc4337.sendTransaction = jest.fn().mockImplementation((tx) => ({
-        fee: EXPECTED_SWAP_RESULT.fee,
-        hash: EXPECTED_SWAP_RESULT.hash
-      }))
+      account.getAddress = jest.fn().mockResolvedValue(USER_ADDRESS)
 
-      paraswapProtocolEvmErc4337 = new ParaSwapProtocolEVM(accountEvm)
-
-      paraswapProtocolEvmErc4337._veloraSdkPromise = VELORA_SDK_MOCK
-    })
-
-    describe('quoteSwap', () => {
-      test('should return the expected quote result', async () => {
-        const qoute = await paraswapProtocolEvmErc4337.quoteSwap(SWAP_OPTIONS)
-
-        expect(qoute.fee).toBe(EXPECTED_SWAP_RESULT.fee)
-        expect(qoute.tokenInAmount).toBe(EXPECTED_SWAP_RESULT.tokenInAmount)
-        expect(qoute.tokenOutAmount).toBe(EXPECTED_SWAP_RESULT.tokenOutAmount)
-      })
-
-      test('should throw when tokenIn and tokenOut are equal', async () => {
-        const INVALID_SWAP_OPTIONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_1,
-          tokenInAmount: EXPECTED_SWAP_RESULT.tokenInAmount
-        }
-
-        await expect(paraswapProtocolEvmErc4337.quoteSwap(INVALID_SWAP_OPTIONS)).rejects.toThrow("'tokenIn' and 'tokenOut' cannot be equal.")
-      })
-
-      test('should throw when neither tokenInAmount nor tokenOutAmount is provided', async () => {
-        const INVALID_SWAP_OPTIONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2
-        }
-
-        await expect(paraswapProtocolEvmErc4337.quoteSwap(INVALID_SWAP_OPTIONS)).rejects.toThrow("A valid 'tokenInAmount' or 'tokenOutAmount' must be passed.")
-      })
-
-      test('should throw when both tokenInAmount and tokenOutAmount are provided', async () => {
-        const INVALID_SWAP_OPTIONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2,
-          tokenInAmount: EXPECTED_SWAP_RESULT.tokenInAmount,
-          tokenOutAmount: EXPECTED_SWAP_RESULT.tokenOutAmount
-        }
-
-        await expect(paraswapProtocolEvmErc4337.quoteSwap(INVALID_SWAP_OPTIONS)).rejects.toThrow("Cannot use both 'tokenInAmount' and 'tokenOutAmount' arguments.")
-      })
-
-      test('should work with tokenOutAmount provided', async () => {
-        const SWAP_OPTIONS_WITH_TOKEN_OUT_AMOUNT = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2,
-          tokenOutAmount: EXPECTED_SWAP_RESULT.tokenOutAmount
-        }
-
-        const quote = await paraswapProtocolEvmErc4337.quoteSwap(SWAP_OPTIONS_WITH_TOKEN_OUT_AMOUNT)
-
-        expect(quote.fee).toBe(EXPECTED_SWAP_RESULT.fee)
-        expect(quote.tokenInAmount).toBe(EXPECTED_SWAP_RESULT.tokenInAmount)
-        expect(quote.tokenOutAmount).toBe(EXPECTED_SWAP_RESULT.tokenOutAmount)
-      })
-
-      test('should throw if the account is not connected to a provider', async () => {
-        const account = new WalletAccountEvmErc4337(SEED_PHRASE, "0'/0/0", { chainId: CHAIN_ID })
-        const usdt0ProtocolEvm = new ParaSwapProtocolEVM(account)
-
-        await expect(usdt0ProtocolEvm.quoteSwap(SWAP_OPTIONS)).rejects.toThrow('The wallet must be connected to a provider to quote swap.')
-      })
+      protocol = new ParaSwapProtocolEvm(account)
     })
 
     describe('swap', () => {
-      test('should return the expected swap result', async () => {
-        const result = await paraswapProtocolEvmErc4337.swap(SWAP_OPTIONS)
+      beforeEach(() => {
+        getRateMock.mockResolvedValue(DUMMY_PRICE_ROUTE)
 
-        expect(result.hash).toBe(EXPECTED_SWAP_RESULT.hash)
-        expect(result.fee).toBe(EXPECTED_SWAP_RESULT.fee)
-        expect(result.tokenInAmount).toBe(EXPECTED_SWAP_RESULT.tokenInAmount)
-        expect(result.tokenOutAmount).toBe(EXPECTED_SWAP_RESULT.tokenOutAmount)
+        buildTxMock.mockResolvedValue(DUMMY_SWAP_TRANSACTION)
+
+        account.quoteSendTransaction = jest.fn()
+          .mockResolvedValueOnce({ fee: 80_235n })
+
+        account.sendTransaction = jest.fn()
+          .mockResolvedValueOnce({ hash: 'dummy-user-operation-hash', fee: 80_235n })
       })
 
-      test('should throw when tokenIn and tokenOut are equal', async () => {
-        const INVALID_SWAP_OPTIONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_1,
-          tokenInAmount: EXPECTED_SWAP_RESULT.tokenInAmount
+      test('should successfully execute a swap (buy)', async () => {
+        const result = await protocol.swap({
+          tokenIn: TOKEN_IN,
+          tokenOut: TOKEN_OUT,
+          tokenOutAmount: 100_000
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: TOKEN_IN,
+          destToken: TOKEN_OUT,
+          amount: '100000',
+          side: SwapSide.BUY
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith({
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }, {
+          ignoreChecks: true
+        })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
+
+        expect(account.sendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
+
+        expect(result).toEqual({
+          hash: 'dummy-user-operation-hash',
+          fee: 80_235n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
+      test('should successfully execute a swap (sell)', async () => {
+        const result = await protocol.swap({
+          tokenIn: TOKEN_IN,
+          tokenOut: TOKEN_OUT,
+          tokenInAmount: 100
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: TOKEN_IN,
+          destToken: TOKEN_OUT,
+          amount: '100',
+          side: SwapSide.SELL
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith({
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }, {
+          ignoreChecks: true
+        })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
+
+        expect(account.sendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
+
+        expect(result).toEqual({
+          hash: 'dummy-user-operation-hash',
+          fee: 80_235n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
+      test('should throw if the swap fee exceeds the swap max fee configuration', async () => {
+        const OPTIONS = {
+          tokenIn: TOKEN_IN,
+          tokenOut: TOKEN_OUT,
+          tokenOutAmount: 100_000
         }
 
-        await expect(paraswapProtocolEvmErc4337.swap(INVALID_SWAP_OPTIONS)).rejects.toThrow("'tokenIn' and 'tokenOut' cannot be equal.")
-      })
+        const protocol = new ParaSwapProtocolEvm(account, {
+          swapMaxFee: 0
+        })
 
-      test('should throw when neither tokenInAmount nor tokenOutAmount is provided', async () => {
-        const INVALID_SWAP_OPTIONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2
-        }
-
-        await expect(paraswapProtocolEvmErc4337.swap(INVALID_SWAP_OPTIONS)).rejects.toThrow("A valid 'tokenInAmount' or 'tokenOutAmount' must be passed.")
-      })
-
-      test('should throw when both tokenInAmount and tokenOutAmount are provided', async () => {
-        const INVALID_SWAP_OPTIONS = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2,
-          tokenInAmount: EXPECTED_SWAP_RESULT.tokenInAmount,
-          tokenOutAmount: EXPECTED_SWAP_RESULT.tokenOutAmount
-        }
-
-        await expect(paraswapProtocolEvmErc4337.swap(INVALID_SWAP_OPTIONS)).rejects.toThrow("Cannot use both 'tokenInAmount' and 'tokenOutAmount' arguments.")
-      })
-
-      test('should swap with tokenOutAmount provided', async () => {
-        const SWAP_OPTIONS_WITH_TOKEN_OUT_AMOUNT = {
-          tokenIn: TOKEN_ADDRESS_1,
-          tokenOut: TOKEN_ADDRESS_2,
-          tokenOutAmount: EXPECTED_SWAP_RESULT.tokenOutAmount
-        }
-
-        const result = await paraswapProtocolEvmErc4337.swap(SWAP_OPTIONS_WITH_TOKEN_OUT_AMOUNT)
-
-        expect(result.hash).toBe(EXPECTED_SWAP_RESULT.hash)
-        expect(result.fee).toBe(EXPECTED_SWAP_RESULT.fee)
-        expect(result.tokenInAmount).toBe(EXPECTED_SWAP_RESULT.tokenInAmount)
-        expect(result.tokenOutAmount).toBe(EXPECTED_SWAP_RESULT.tokenOutAmount)
-      })
-
-      test('should throw if the account is not connected to a provider', async () => {
-        const account = new WalletAccountEvmErc4337(SEED_PHRASE, "0'/0/0", { chainId: CHAIN_ID })
-        const usdt0ProtocolEvm = new ParaSwapProtocolEVM(account)
-
-        await expect(usdt0ProtocolEvm.swap(SWAP_OPTIONS)).rejects.toThrow('The wallet must be connected to a provider to swap.')
-      })
-
-      test('should throw when swapMaxFee is exceeded', async () => {
-        const config = { swapMaxFee: EXPECTED_SWAP_RESULT.fee - 1 }
-
-        await expect(paraswapProtocolEvmErc4337.swap(SWAP_OPTIONS, config)).rejects.toThrow('Exceeded maximum fee cost for swap operation.')
-      })
-
-      test('should work when swapMaxFee is not exceeded', async () => {
-        const config = { swapMaxFee: EXPECTED_SWAP_RESULT.fee + 1 }
-
-        const result = await paraswapProtocolEvmErc4337.swap(SWAP_OPTIONS, config)
-
-        expect(result.hash).toBe(EXPECTED_SWAP_RESULT.hash)
-        expect(result.fee).toBe(EXPECTED_SWAP_RESULT.fee)
-        expect(result.tokenInAmount).toBe(EXPECTED_SWAP_RESULT.tokenInAmount)
-        expect(result.tokenOutAmount).toBe(EXPECTED_SWAP_RESULT.tokenOutAmount)
+        await expect(protocol.swap(OPTIONS))
+          .rejects.toThrow('Exceeded maximum fee cost for swap operation.')
       })
 
       test('should throw if the account is read only', async () => {
-        const readOnlyAccount = new WalletAccountReadOnlyEvmErc4337(ABSTRACTED_ADDRESS, { chainId: CHAIN_ID })
+        const account = new WalletAccountReadOnlyEvmErc4337(USER_ADDRESS, {
+          chainId: 1,
+          provider: 'https://mock-rpc-url.com'
+        })
 
-        const readOnlyProtocolEvm = new ParaSwapProtocolEVM(readOnlyAccount)
+        const protocol = new ParaSwapProtocolEvm(account)
 
-        await expect(readOnlyProtocolEvm.swap(SWAP_OPTIONS)).rejects.toThrow('Swap operation cannot be performed with a read-only account.')
+        await expect(protocol.swap({ }))
+          .rejects.toThrow("The 'swap(options)' method requires the protocol to be initialized with a non read-only account.")
+      })
+
+      test('should throw if the account is not connected to a provider', async () => {
+        const account = new WalletAccountEvmErc4337(SEED, "0'/0/0", {
+          chainId: 1
+        })
+
+        const protocol = new ParaSwapProtocolEvm(account)
+
+        await expect(protocol.swap({ }))
+          .rejects.toThrow('The wallet must be connected to a provider in order to perform swap operations.')
+      })
+    })
+
+    describe('quoteSwap', () => {
+      beforeEach(() => {
+        getRateMock.mockResolvedValue(DUMMY_PRICE_ROUTE)
+
+        buildTxMock.mockResolvedValue(DUMMY_SWAP_TRANSACTION)
+
+        account.quoteSendTransaction = jest.fn()
+          .mockResolvedValueOnce({ fee: 80_235n })
+      })
+
+      test('should successfully quote a swap (buy)', async () => {
+        const result = await protocol.quoteSwap({
+          tokenIn: TOKEN_IN,
+          tokenOut: TOKEN_OUT,
+          tokenOutAmount: 100_000
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: TOKEN_IN,
+          destToken: TOKEN_OUT,
+          amount: '100000',
+          side: SwapSide.BUY
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith({
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }, {
+          ignoreChecks: true
+        })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
+
+        expect(result).toEqual({
+          fee: 80_235n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
+      test('should successfully quote a swap (sell)', async () => {
+        const result = await protocol.quoteSwap({
+          tokenIn: TOKEN_IN,
+          tokenOut: TOKEN_OUT,
+          tokenInAmount: 100
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: TOKEN_IN,
+          destToken: TOKEN_OUT,
+          amount: '100',
+          side: SwapSide.SELL
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith({
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }, {
+          ignoreChecks: true
+        })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
+
+        expect(result).toEqual({
+          fee: 80_235n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
+      test('should throw if the account is not connected to a provider', async () => {
+        const account = new WalletAccountEvmErc4337(SEED, "0'/0/0", {
+          chainId: 1
+        })
+
+        const protocol = new ParaSwapProtocolEvm(account)
+
+        await expect(protocol.quoteSwap({ }))
+          .rejects.toThrow('The wallet must be connected to a provider in order to quote swap operations.')
       })
     })
   })

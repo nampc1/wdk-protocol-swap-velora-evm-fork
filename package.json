@@ -1,11 +1,18 @@
 {
   "name": "@wdk/protocol-swap-paraswap-evm",
   "version": "1.0.0-beta.1",
-  "description": "A simple package to handle token swaps using ParaSwap on EVM networks",
+  "description": "A simple package that lets @wdk/wallet-evm and wallet-evm-erc-4337 wallet accounts interact with the paraswap protocol.",
+  "keywords": ["wdk", "protocol", "swap", "paraswap", "ethereum", "erc-4337"],
+  "author": "Tether",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/tetherto/wdk-protocol-swap-paraswap-evm.git"
+  },
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build:types": "rimraf *.d.ts **/*.d.ts; tsc",
+    "build:types": "tsc",
     "lint": "standard",
     "lint:fix": "standard --fix",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
@@ -13,9 +20,9 @@
   },
   "dependencies": {
     "@velora-dex/sdk": "8.1.0",
-    "@wdk/wallet": "https://github.com/tetherto/wdk-wallet#develop",
-    "@wdk/wallet-evm": "https://github.com/tetherto/wdk-wallet-evm#develop",
-    "@wdk/wallet-evm-erc-4337": "https://github.com/tetherto/wdk-wallet-evm-erc-4337#develop",
+    "@wdk/wallet": "https://github.com/davi0kprogramsthings/wdk-wallet#develop",
+    "@wdk/wallet-evm": "https://github.com/davi0kprogramsthings/wdk-wallet-evm#develop",
+    "@wdk/wallet-evm-erc-4337": "https://github.com/davi0kprogramsthings/wdk-wallet-evm-erc-4337#develop",
     "ethers": "6.13.5"
   },
   "devDependencies": {
@@ -23,5 +30,11 @@
     "jest": "30.0.5",
     "standard": "17.1.2",
     "typescript": "5.8.3"
+  },
+  "standard": {
+    "ignore": [
+      "bare.js",
+      "tests/**/*.js"
+    ]
   }
 }
