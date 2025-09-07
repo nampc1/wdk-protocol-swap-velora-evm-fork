@@ -49,6 +49,17 @@ describe('ParaSwapProtocolEvm', () => {
     destAmount: '100000'
   }
 
+  const DUMMY_BUILD_TX_INPUT = {
+    partner: 'wdk',
+    srcToken: DUMMY_PRICE_ROUTE.srcToken,
+    destToken: DUMMY_PRICE_ROUTE.destToken,
+    srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+    destAmount: DUMMY_PRICE_ROUTE.destAmount,
+    userAddress: USER_ADDRESS,
+    receiver: undefined,
+    priceRoute: DUMMY_PRICE_ROUTE
+  }
+
   const DUMMY_APPROVE_TRANSACTION = {
     to: TOKEN_IN,
     value: 0,
@@ -104,18 +115,7 @@ describe('ParaSwapProtocolEvm', () => {
           side: SwapSide.BUY
         })
 
-        expect(buildTxMock).toHaveBeenCalledWith({
-          partner: 'wdk',
-          srcToken: DUMMY_PRICE_ROUTE.srcToken,
-          destToken: DUMMY_PRICE_ROUTE.destToken,
-          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
-          destAmount: DUMMY_PRICE_ROUTE.destAmount,
-          userAddress: USER_ADDRESS,
-          receiver: undefined,
-          priceRoute: DUMMY_PRICE_ROUTE
-        }, {
-          ignoreChecks: true
-        })
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
 
         expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
         expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
@@ -146,18 +146,7 @@ describe('ParaSwapProtocolEvm', () => {
           side: SwapSide.SELL
         })
 
-        expect(buildTxMock).toHaveBeenCalledWith({
-          partner: 'wdk',
-          srcToken: DUMMY_PRICE_ROUTE.srcToken,
-          destToken: DUMMY_PRICE_ROUTE.destToken,
-          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
-          destAmount: DUMMY_PRICE_ROUTE.destAmount,
-          userAddress: USER_ADDRESS,
-          receiver: undefined,
-          priceRoute: DUMMY_PRICE_ROUTE
-        }, {
-          ignoreChecks: true
-        })
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
 
         expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
         expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
@@ -235,18 +224,7 @@ describe('ParaSwapProtocolEvm', () => {
           side: SwapSide.BUY
         })
 
-        expect(buildTxMock).toHaveBeenCalledWith({
-          partner: 'wdk',
-          srcToken: DUMMY_PRICE_ROUTE.srcToken,
-          destToken: DUMMY_PRICE_ROUTE.destToken,
-          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
-          destAmount: DUMMY_PRICE_ROUTE.destAmount,
-          userAddress: USER_ADDRESS,
-          receiver: undefined,
-          priceRoute: DUMMY_PRICE_ROUTE
-        }, {
-          ignoreChecks: true
-        })
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
 
         expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
         expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
@@ -272,18 +250,7 @@ describe('ParaSwapProtocolEvm', () => {
           side: SwapSide.SELL
         })
 
-        expect(buildTxMock).toHaveBeenCalledWith({
-          partner: 'wdk',
-          srcToken: DUMMY_PRICE_ROUTE.srcToken,
-          destToken: DUMMY_PRICE_ROUTE.destToken,
-          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
-          destAmount: DUMMY_PRICE_ROUTE.destAmount,
-          userAddress: USER_ADDRESS,
-          receiver: undefined,
-          priceRoute: DUMMY_PRICE_ROUTE
-        }, {
-          ignoreChecks: true
-        })
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
 
         expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
         expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
@@ -345,18 +312,7 @@ describe('ParaSwapProtocolEvm', () => {
           side: SwapSide.BUY
         })
 
-        expect(buildTxMock).toHaveBeenCalledWith({
-          partner: 'wdk',
-          srcToken: DUMMY_PRICE_ROUTE.srcToken,
-          destToken: DUMMY_PRICE_ROUTE.destToken,
-          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
-          destAmount: DUMMY_PRICE_ROUTE.destAmount,
-          userAddress: USER_ADDRESS,
-          receiver: undefined,
-          priceRoute: DUMMY_PRICE_ROUTE
-        }, {
-          ignoreChecks: true
-        })
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
 
         expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
 
@@ -384,18 +340,7 @@ describe('ParaSwapProtocolEvm', () => {
           side: SwapSide.SELL
         })
 
-        expect(buildTxMock).toHaveBeenCalledWith({
-          partner: 'wdk',
-          srcToken: DUMMY_PRICE_ROUTE.srcToken,
-          destToken: DUMMY_PRICE_ROUTE.destToken,
-          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
-          destAmount: DUMMY_PRICE_ROUTE.destAmount,
-          userAddress: USER_ADDRESS,
-          receiver: undefined,
-          priceRoute: DUMMY_PRICE_ROUTE
-        }, {
-          ignoreChecks: true
-        })
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
 
         expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
 
@@ -472,18 +417,7 @@ describe('ParaSwapProtocolEvm', () => {
           side: SwapSide.BUY
         })
 
-        expect(buildTxMock).toHaveBeenCalledWith({
-          partner: 'wdk',
-          srcToken: DUMMY_PRICE_ROUTE.srcToken,
-          destToken: DUMMY_PRICE_ROUTE.destToken,
-          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
-          destAmount: DUMMY_PRICE_ROUTE.destAmount,
-          userAddress: USER_ADDRESS,
-          receiver: undefined,
-          priceRoute: DUMMY_PRICE_ROUTE
-        }, {
-          ignoreChecks: true
-        })
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
 
         expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
 
@@ -508,18 +442,7 @@ describe('ParaSwapProtocolEvm', () => {
           side: SwapSide.SELL
         })
 
-        expect(buildTxMock).toHaveBeenCalledWith({
-          partner: 'wdk',
-          srcToken: DUMMY_PRICE_ROUTE.srcToken,
-          destToken: DUMMY_PRICE_ROUTE.destToken,
-          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
-          destAmount: DUMMY_PRICE_ROUTE.destAmount,
-          userAddress: USER_ADDRESS,
-          receiver: undefined,
-          priceRoute: DUMMY_PRICE_ROUTE
-        }, {
-          ignoreChecks: true
-        })
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
 
         expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
 
