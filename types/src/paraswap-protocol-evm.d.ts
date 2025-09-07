@@ -17,7 +17,8 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
     constructor(account: WalletAccountEvm | WalletAccountEvmErc4337, config?: SwapProtocolConfig);
     /** @private */
     private _veloraSdk;
-    _provider: JsonRpcProvider | BrowserProvider;
+    /** @private */
+    private _provider: JsonRpcProvider | BrowserProvider;
     /**
      * Swaps a pair of tokens.
      *
@@ -44,6 +45,7 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
 }
 export type SwapProtocolConfig = import("@wdk/wallet/protocols").SwapProtocolConfig;
 export type SwapOptions = import("@wdk/wallet/protocols").SwapOptions;
+export type WalletAccountReadOnlyEvm = import("@wdk/wallet-evm").WalletAccountReadOnlyEvm;
 export type EvmErc4337WalletConfig = import("@wdk/wallet-evm-erc-4337").EvmErc4337WalletConfig;
 export type ParaSwapResult = {
     /**
@@ -72,7 +74,6 @@ export type ParaSwapResult = {
 import { SwapProtocol } from '@wdk/wallet/protocols';
 import { JsonRpcProvider } from 'ethers';
 import { BrowserProvider } from 'ethers';
-import { WalletAccountReadOnlyEvm } from '@wdk/wallet-evm';
 import { WalletAccountReadOnlyEvmErc4337 } from '@wdk/wallet-evm-erc-4337';
 import { WalletAccountEvm } from '@wdk/wallet-evm';
 import { WalletAccountEvmErc4337 } from '@wdk/wallet-evm-erc-4337';

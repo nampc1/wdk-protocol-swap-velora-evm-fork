@@ -25,6 +25,8 @@ import { constructSimpleSDK, SwapSide } from '@velora-dex/sdk'
 /** @typedef {import('@wdk/wallet/protocols').SwapProtocolConfig} SwapProtocolConfig */
 /** @typedef {import('@wdk/wallet/protocols').SwapOptions} SwapOptions */
 
+/** @typedef {import('@wdk/wallet-evm').WalletAccountReadOnlyEvm} WalletAccountReadOnlyEvm */
+
 /** @typedef {import('@wdk/wallet-evm-erc-4337').EvmErc4337WalletConfig} EvmErc4337WalletConfig */
 
 /**
@@ -33,8 +35,8 @@ import { constructSimpleSDK, SwapSide } from '@velora-dex/sdk'
  * @property {bigint} fee - The gas cost.
  * @property {bigint} tokenInAmount - The amount of input tokens sold.
  * @property {bigint} tokenOutAmount -  The amount of output tokens bought.
- * @property {string} [approveHash] - If the protocol has been initialized with a normal wallet account, this field will contain the hash
- *   of the approve call to allow paraswap to spend the input tokens. If the protocol has been initialized with an erc-4337 wallet account,
+ * @property {string} [approveHash] - If the protocol has been initialized with a standard wallet account, this field will contain the hash
+ *   of the approve call to allow paraswap to transfer the input tokens. If the protocol has been initialized with an erc-4337 wallet account,
  *   this field will be undefined (since the approve call will be bundled in the user operation with hash {@link ParaSwapResult#hash}).
  */
 
@@ -63,6 +65,7 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
     if (account._config.provider) {
       const { provider } = account._config
 
+      /** @private */
       this._provider = typeof provider === 'string'
         ? new JsonRpcProvider(provider)
         : new BrowserProvider(provider)
