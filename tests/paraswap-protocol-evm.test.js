@@ -90,7 +90,7 @@ describe('ParaSwapProtocolEvm', () => {
           .mockResolvedValueOnce({ hash: 'dummy-swap-hash', fee: 67_890n })
       })
 
-      test('should successfully execute a swap (buy)', async () => {
+      test('should successfully perform a swap operation (buy)', async () => {
         const result = await protocol.swap({
           tokenIn: TOKEN_IN,
           tokenOut: TOKEN_OUT,
@@ -132,7 +132,7 @@ describe('ParaSwapProtocolEvm', () => {
         })
       })
 
-      test('should successfully execute a swap (sell)', async () => {
+      test('should successfully perform a swap operation (sell)', async () => {
         const result = await protocol.swap({
           tokenIn: TOKEN_IN,
           tokenOut: TOKEN_OUT,
@@ -189,7 +189,7 @@ describe('ParaSwapProtocolEvm', () => {
           .rejects.toThrow('Exceeded maximum fee cost for swap operation.')
       })
 
-      test('should throw if the account is read only', async () => {
+      test('should throw if the account is read-only', async () => {
         const account = new WalletAccountReadOnlyEvm(USER_ADDRESS, {
           provider: 'https://mock-rpc-url.com'
         })
@@ -221,7 +221,7 @@ describe('ParaSwapProtocolEvm', () => {
           .mockResolvedValueOnce({ fee: 67_890n })
       })
 
-      test('should successfully quote a swap (buy)', async () => {
+      test('should successfully quote a swap operation (buy)', async () => {
         const result = await protocol.quoteSwap({
           tokenIn: TOKEN_IN,
           tokenOut: TOKEN_OUT,
@@ -258,7 +258,7 @@ describe('ParaSwapProtocolEvm', () => {
         })
       })
 
-      test('should successfully quote a swap (sell)', async () => {
+      test('should successfully quote a swap operation (sell)', async () => {
         const result = await protocol.quoteSwap({
           tokenIn: TOKEN_IN,
           tokenOut: TOKEN_OUT,
@@ -331,7 +331,7 @@ describe('ParaSwapProtocolEvm', () => {
           .mockResolvedValueOnce({ hash: 'dummy-user-operation-hash', fee: 80_235n })
       })
 
-      test('should successfully execute a swap (buy)', async () => {
+      test('should successfully perform a swap operation (buy)', async () => {
         const result = await protocol.swap({
           tokenIn: TOKEN_IN,
           tokenOut: TOKEN_OUT,
@@ -370,7 +370,7 @@ describe('ParaSwapProtocolEvm', () => {
         })
       })
 
-      test('should successfully execute a swap (sell)', async () => {
+      test('should successfully perform a swap operation (sell)', async () => {
         const result = await protocol.swap({
           tokenIn: TOKEN_IN,
           tokenOut: TOKEN_OUT,
@@ -424,7 +424,7 @@ describe('ParaSwapProtocolEvm', () => {
           .rejects.toThrow('Exceeded maximum fee cost for swap operation.')
       })
 
-      test('should throw if the account is read only', async () => {
+      test('should throw if the account is read-only', async () => {
         const account = new WalletAccountReadOnlyEvmErc4337(USER_ADDRESS, {
           chainId: 1,
           provider: 'https://mock-rpc-url.com'
@@ -458,7 +458,7 @@ describe('ParaSwapProtocolEvm', () => {
           .mockResolvedValueOnce({ fee: 80_235n })
       })
 
-      test('should successfully quote a swap (buy)', async () => {
+      test('should successfully quote a swap operation (buy)', async () => {
         const result = await protocol.quoteSwap({
           tokenIn: TOKEN_IN,
           tokenOut: TOKEN_OUT,
@@ -494,7 +494,7 @@ describe('ParaSwapProtocolEvm', () => {
         })
       })
 
-      test('should successfully quote a swap (sell)', async () => {
+      test('should successfully quote a swap operation (sell)', async () => {
         const result = await protocol.quoteSwap({
           tokenIn: TOKEN_IN,
           tokenOut: TOKEN_OUT,
