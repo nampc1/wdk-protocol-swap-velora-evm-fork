@@ -106,11 +106,11 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
       return { hash, fee, tokenInAmount, tokenOutAmount }
     }
 
-    const { fee: approvalFee } = await this._account.quoteSendTransaction(approveTx)
+    const { fee: approveFee } = await this._account.quoteSendTransaction(approveTx)
 
     const { fee: swapFee } = await this._account.quoteSendTransaction(swapTx)
 
-    const fee = approvalFee + swapFee
+    const fee = approveFee + swapFee
 
     if (this._config.swapMaxFee !== undefined && fee >= this._config.swapMaxFee) {
       throw new Error('Exceeded maximum fee cost for swap operation.')
@@ -144,12 +144,12 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
       return { fee, tokenInAmount, tokenOutAmount }
     }
 
-    const { fee: approvalFee } = await this._account.quoteSendTransaction(approveTx)
+    const { fee: approveFee } = await this._account.quoteSendTransaction(approveTx)
 
     const { fee: swapFee } = await this._account.quoteSendTransaction(swapTx)
 
     return {
-      fee: swapFee + approvalFee,
+      fee: swapFee + approveFee,
       tokenInAmount,
       tokenOutAmount
     }
