@@ -23,6 +23,7 @@
     "@wdk/wallet": "https://github.com/davi0kprogramsthings/wdk-wallet#develop",
     "@wdk/wallet-evm": "https://github.com/davi0kprogramsthings/wdk-wallet-evm#develop",
     "@wdk/wallet-evm-erc-4337": "https://github.com/davi0kprogramsthings/wdk-wallet-evm-erc-4337#develop",
+    "bare-wdk-runtime": "2.0.1",
     "ethers": "6.13.5"
   },
   "devDependencies": {
@@ -30,6 +31,16 @@
     "jest": "30.0.5",
     "standard": "17.1.2",
     "typescript": "5.8.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "bare": "./bare.js",
+      "default": "./index.js"
+    },
+    "./package": {
+      "default": "./package.json"
+    }
   },
   "standard": {
     "ignore": [

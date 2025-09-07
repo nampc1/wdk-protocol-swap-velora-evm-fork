@@ -20,7 +20,7 @@ import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@wdk/w
 
 import { JsonRpcProvider, BrowserProvider, Contract } from 'ethers'
 
-import { constructSimpleSDK, SwapSide } from '@velora-dex/sdk'
+import { constructSimpleSDK } from '@velora-dex/sdk'
 
 /** @typedef {import('@wdk/wallet/protocols').SwapProtocolConfig} SwapProtocolConfig */
 /** @typedef {import('@wdk/wallet/protocols').SwapOptions} SwapOptions */
@@ -174,8 +174,8 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
     const veloraSdk = await this._getVeloraSdk()
 
     const { side, amount } = tokenInAmount
-      ? { side: SwapSide.SELL, amount: tokenInAmount }
-      : { side: SwapSide.BUY, amount: tokenOutAmount }
+      ? { side: 'SELL', amount: tokenInAmount }
+      : { side: 'BUY', amount: tokenOutAmount }
 
     const priceRoute = await veloraSdk.swap.getRate({
       srcToken: tokenIn,
