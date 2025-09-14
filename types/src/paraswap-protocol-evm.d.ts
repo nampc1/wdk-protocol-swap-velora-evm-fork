@@ -26,18 +26,18 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
      * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'> & Pick<SwapProtocolConfig, 'swapMaxFee'>} [config] - If the protocol has
      *   been initialized with an erc-4337 wallet account, overrides the 'paymasterToken' option defined in its configuration and the
      *   'swapMaxFee' option defined in the protocol configuration.
-     * @returns {Promise<ParaSwapResult>} The swap's result.
+     * @returns {Promise<SwapResult>} The swap's result.
      */
-    swap(options: SwapOptions, config?: Pick<EvmErc4337WalletConfig, "paymasterToken"> & Pick<SwapProtocolConfig, "swapMaxFee">): Promise<ParaSwapResult>;
+    swap(options: SwapOptions, config?: Pick<EvmErc4337WalletConfig, "paymasterToken"> & Pick<SwapProtocolConfig, "swapMaxFee">): Promise<SwapResult>;
     /**
      * Quotes the costs of a swap operation.
      *
      * @param {SwapOptions} options - The swap's options.
      * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'>} [config] - If the protocol has been initialized with an erc-4337
      *   wallet account, overrides the 'paymasterToken' option defined in its configuration.
-     * @returns {Promise<Omit<ParaSwapResult, 'hash' | 'approveHash'>>} The swap's quotes.
+     * @returns {Promise<Omit<SwapResult, 'hash' | 'approveHash'>>} The swap's quotes.
      */
-    quoteSwap(options: SwapOptions, config?: Pick<EvmErc4337WalletConfig, "paymasterToken">): Promise<Omit<ParaSwapResult, "hash" | "approveHash">>;
+    quoteSwap(options: SwapOptions, config?: Pick<EvmErc4337WalletConfig, "paymasterToken">): Promise<Omit<SwapResult, "hash" | "approveHash">>;
     /** @private */
     private _getVeloraSdk;
     /** @private */
@@ -47,7 +47,7 @@ export type SwapProtocolConfig = import("@wdk/wallet/protocols").SwapProtocolCon
 export type SwapOptions = import("@wdk/wallet/protocols").SwapOptions;
 export type WalletAccountReadOnlyEvm = import("@wdk/wallet-evm").WalletAccountReadOnlyEvm;
 export type EvmErc4337WalletConfig = import("@wdk/wallet-evm-erc-4337").EvmErc4337WalletConfig;
-export type ParaSwapResult = {
+export type SwapResult = {
     /**
      * - The hash of the swap operation.
      */
@@ -67,7 +67,7 @@ export type ParaSwapResult = {
     /**
      * - If the protocol has been initialized with a normal wallet account, this field will contain the hash
      * of the approve call to allow paraswap to spend the input tokens. If the protocol has been initialized with an erc-4337 wallet account,
-     * this field will be undefined (since the approve call will be bundled in the user operation with hash {@link ParaSwapResult#hash}).
+     * this field will be undefined (since the approve call will be bundled in the user operation with hash {@link SwapResult#hash}).
      */
     approveHash?: string;
 };

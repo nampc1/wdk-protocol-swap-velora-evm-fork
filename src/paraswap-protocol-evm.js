@@ -30,14 +30,14 @@ import { constructSimpleSDK } from '@velora-dex/sdk'
 /** @typedef {import('@wdk/wallet-evm-erc-4337').EvmErc4337WalletConfig} EvmErc4337WalletConfig */
 
 /**
- * @typedef {Object} ParaSwapResult
+ * @typedef {Object} SwapResult
  * @property {string} hash - The hash of the swap operation.
  * @property {bigint} fee - The gas cost.
  * @property {bigint} tokenInAmount - The amount of input tokens sold.
  * @property {bigint} tokenOutAmount -  The amount of output tokens bought.
  * @property {string} [approveHash] - If the protocol has been initialized with a standard wallet account, this field will contain the hash
  *   of the approve call to allow paraswap to transfer the input tokens. If the protocol has been initialized with an erc-4337 wallet account,
- *   this field will be undefined (since the approve call will be bundled in the user operation with hash {@link ParaSwapResult#hash}).
+ *   this field will be undefined (since the approve call will be bundled in the user operation with hash {@link SwapResult#hash}).
  */
 
 export default class ParaSwapProtocolEvm extends SwapProtocol {
@@ -79,7 +79,7 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
    * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'> & Pick<SwapProtocolConfig, 'swapMaxFee'>} [config] - If the protocol has
    *   been initialized with an erc-4337 wallet account, overrides the 'paymasterToken' option defined in its configuration and the
    *   'swapMaxFee' option defined in the protocol configuration.
-   * @returns {Promise<ParaSwapResult>} The swap's result.
+   * @returns {Promise<SwapResult>} The swap's result.
    */
   async swap (options, config) {
     if (!(this._account instanceof WalletAccountEvm) && !(this._account instanceof WalletAccountEvmErc4337)) {
@@ -129,7 +129,7 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
    * @param {SwapOptions} options - The swap's options.
    * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'>} [config] - If the protocol has been initialized with an erc-4337
    *   wallet account, overrides the 'paymasterToken' option defined in its configuration.
-   * @returns {Promise<Omit<ParaSwapResult, 'hash' | 'approveHash'>>} The swap's quotes.
+   * @returns {Promise<Omit<SwapResult, 'hash' | 'approveHash'>>} The swap's quotes.
    */
   async quoteSwap (options, config) {
     if (!this._provider) {

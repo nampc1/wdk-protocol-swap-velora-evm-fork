@@ -18,6 +18,6 @@
 
 /** @typedef {import('@wdk/wallet/protocols').SwapOptions} SwapOptions */
 
-/** @typedef {import('./src/paraswap-protocol-evm.js').ParaSwapResult} ParaSwapResult */
+/** @typedef {import('./src/paraswap-protocol-evm.js').SwapResult} SwapResult */
 
 export { default } from './src/paraswap-protocol-evm.js'
