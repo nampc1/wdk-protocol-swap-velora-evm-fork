@@ -70,6 +70,13 @@ export type SwapResult = {
      * this field will be undefined (since the approve call will be bundled in the user operation with hash {@link SwapResult#hash}).
      */
     approveHash?: string;
+    /**
+     * - If the swap operation has been performed on ethereum mainnet by selling usdt tokens, this field will
+     * contain the hash of the approve call that resets the allowance of the paraswap protocol to zero (due to the usdt allowance reset requirement).
+     * If the protocol has been initialized with an erc-4337 wallet account, this field will be undefined (since the approve call will be bundled in
+     * the user operation with hash {@link SwapResult#hash}).
+     */
+    resetAllowanceHash?: string;
 };
 import { SwapProtocol } from '@wdk/wallet/protocols';
 import { JsonRpcProvider } from 'ethers';

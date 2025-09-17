@@ -38,7 +38,13 @@ import { constructSimpleSDK } from '@velora-dex/sdk'
  * @property {string} [approveHash] - If the protocol has been initialized with a standard wallet account, this field will contain the hash
  *   of the approve call to allow paraswap to transfer the input tokens. If the protocol has been initialized with an erc-4337 wallet account,
  *   this field will be undefined (since the approve call will be bundled in the user operation with hash {@link SwapResult#hash}).
+ * @property {string} [resetAllowanceHash] - If the swap operation has been performed on ethereum mainnet by selling usdt tokens, this field will
+ *   contain the hash of the approve call that resets the allowance of the paraswap protocol to zero (due to the usdt allowance reset requirement).
+ *   If the protocol has been initialized with an erc-4337 wallet account, this field will be undefined (since the approve call will be bundled in
+ *   the user operation with hash {@link SwapResult#hash}).
  */
+
+const USDT = '0xdac17f958d2ee523a2206206994597c13d831ec7'
 
 export default class ParaSwapProtocolEvm extends SwapProtocol {
   /**
@@ -90,37 +96,47 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
       throw new Error('The wallet must be connected to a provider in order to perform swap operations.')
     }
 
-    const { approveTx, swapTx, tokenInAmount, tokenOutAmount } = await this._getSwapTransactions(options)
+    const { resetAllowanceTx, approveTx, swapTx, tokenInAmount, tokenOutAmount } = await this._getSwapTransactions(options)
 
     if (this._account instanceof WalletAccountEvmErc4337) {
       const { swapMaxFee } = config ?? this._config
 
-      const { fee } = await this._account.quoteSendTransaction([approveTx, swapTx], config)
+      const transactions = resetAllowanceTx ? [resetAllowanceTx, approveTx, swapTx] : [approveTx, swapTx]
+
+      const { fee } = await this._account.quoteSendTransaction(transactions, config)
 
       if (swapMaxFee !== undefined && fee >= swapMaxFee) {
         throw new Error('Exceeded maximum fee cost for swap operation.')
       }
 
-      const { hash } = await this._account.sendTransaction([approveTx, swapTx], config)
+      const { hash } = await this._account.sendTransaction(transactions, config)
 
       return { hash, fee, tokenInAmount, tokenOutAmount }
     }
+
+    const { fee: resetAllowanceFee } = resetAllowanceTx
+      ? await this._account.quoteSendTransaction(resetAllowanceTx)
+      : { fee: 0n }
 
     const { fee: approveFee } = await this._account.quoteSendTransaction(approveTx)
 
     const { fee: swapFee } = await this._account.quoteSendTransaction(swapTx)
 
-    const fee = approveFee + swapFee
+    const fee = resetAllowanceFee + approveFee + swapFee
 
     if (this._config.swapMaxFee !== undefined && fee >= this._config.swapMaxFee) {
       throw new Error('Exceeded maximum fee cost for swap operation.')
     }
 
+    const { hash: resetAllowanceHash } = resetAllowanceTx
+      ? await this._account.sendTransaction(resetAllowanceTx)
+      : { hash: undefined }
+
     const { hash: approveHash } = await this._account.sendTransaction(approveTx)
 
     const { hash } = await this._account.sendTransaction(swapTx)
 
-    return { approveHash, hash, fee, tokenInAmount, tokenOutAmount }
+    return { resetAllowanceHash, approveHash, hash, fee, tokenInAmount, tokenOutAmount }
   }
 
   /**
@@ -129,27 +145,33 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
    * @param {SwapOptions} options - The swap's options.
    * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'>} [config] - If the protocol has been initialized with an erc-4337
    *   wallet account, overrides the 'paymasterToken' option defined in its configuration.
-   * @returns {Promise<Omit<SwapResult, 'hash' | 'approveHash'>>} The swap's quotes.
+   * @returns {Promise<Omit<SwapResult, 'hash' | 'approveHash' | 'resetAllowanceHash'>>} The swap's quotes.
    */
   async quoteSwap (options, config) {
     if (!this._provider) {
       throw new Error('The wallet must be connected to a provider in order to quote swap operations.')
     }
 
-    const { approveTx, swapTx, tokenInAmount, tokenOutAmount } = await this._getSwapTransactions(options)
+    const { resetAllowanceTx, approveTx, swapTx, tokenInAmount, tokenOutAmount } = await this._getSwapTransactions(options)
 
     if (this._account instanceof WalletAccountReadOnlyEvmErc4337) {
-      const { fee } = await this._account.quoteSendTransaction([approveTx, swapTx], config)
+      const transactions = resetAllowanceTx ? [resetAllowanceTx, approveTx, swapTx] : [approveTx, swapTx]
+
+      const { fee } = await this._account.quoteSendTransaction(transactions, config)
 
       return { fee, tokenInAmount, tokenOutAmount }
     }
+
+    const { fee: resetAllowanceFee } = resetAllowanceTx
+      ? await this._account.quoteSendTransaction(resetAllowanceTx)
+      : { fee: 0n }
 
     const { fee: approveFee } = await this._account.quoteSendTransaction(approveTx)
 
     const { fee: swapFee } = await this._account.quoteSendTransaction(swapTx)
 
     return {
-      fee: swapFee + approveFee,
+      fee: resetAllowanceFee + approveFee + swapFee,
       tokenInAmount,
       tokenOutAmount
     }
@@ -201,6 +223,16 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
 
     const tokenInContract = new Contract(tokenIn, ['function approve(address,uint256)'])
 
+    let resetAllowanceTx
+
+    if (veloraSdk.chainId === 1 && tokenIn.toLowerCase() === USDT) {
+      resetAllowanceTx = {
+        to: tokenIn,
+        value: 0,
+        data: await tokenInContract.interface.encodeFunctionData('approve', [swapTx.to, 0])
+      }
+    }
+
     const approveTx = {
       to: tokenIn,
       value: 0,
@@ -208,6 +240,7 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
     }
 
     return {
+      resetAllowanceTx,
       approveTx,
       swapTx,
       tokenInAmount: BigInt(priceRoute.srcAmount),

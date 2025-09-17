@@ -14,8 +14,10 @@ const SEED = 'cook voyage document eight skate token alien guide drink uncle ter
 
 const USER_ADDRESS = '0xa460AEbce0d3A4BecAd8ccf9D6D4861296c503Bd'
 
-const TOKEN_IN = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
-const TOKEN_OUT = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+const TOKEN_IN = '0x9e6b38E072f624fdC4Fbaf7bB12a7D9e657435ce'
+const TOKEN_OUT = '0x73091d62F1F11DCb172530126E9630e327770e05'
+const USDT = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+
 const PARASWAP = '0xf90e98F3D8Dce44632E5020ABF2E122E0f99DFAb'
 
 const getRateMock = jest.fn()
@@ -32,6 +34,7 @@ jest.unstable_mockModule('ethers', () => ({
 jest.unstable_mockModule('@velora-dex/sdk', () => ({
   ...veloraDexSdk,
   constructSimpleSDK: jest.fn().mockReturnValue({
+    chainId: 1,
     swap: {
       getRate: getRateMock,
       buildTx: buildTxMock
@@ -163,6 +166,82 @@ describe('ParaSwapProtocolEvm', () => {
         })
       })
 
+      test('should successfully perform a sell operation of usdt tokens', async () => {
+        const DUMMY_PRICE_ROUTE = {
+          srcToken: USDT,
+          destToken: TOKEN_OUT,
+          srcAmount: '100',
+          destAmount: '100000'
+        }
+
+        const DUMMY_BUILD_TX_INPUT = {
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }
+
+        const DUMMY_RESET_ALLOWANCE_TRANSACTION = {
+          to: USDT,
+          value: 0,
+          data: '0x095ea7b3000000000000000000000000f90e98f3d8dce44632e5020abf2e122e0f99dfab0000000000000000000000000000000000000000000000000000000000000000'
+        }
+
+        const DUMMY_APPROVE_TRANSACTION = {
+          to: USDT,
+          value: 0,
+          data: '0x095ea7b3000000000000000000000000f90e98f3d8dce44632e5020abf2e122e0f99dfab0000000000000000000000000000000000000000000000000000000000000064'
+        }
+
+        getRateMock.mockResolvedValue(DUMMY_PRICE_ROUTE)
+
+        account.quoteSendTransaction = jest.fn()
+          .mockResolvedValueOnce({ fee: 9_876n })
+          .mockResolvedValueOnce({ fee: 12_345n })
+          .mockResolvedValueOnce({ fee: 67_890n })
+
+        account.sendTransaction = jest.fn()
+          .mockResolvedValueOnce({ hash: 'dummy-reset-allowance-hash', fee: 9_876n })
+          .mockResolvedValueOnce({ hash: 'dummy-approve-hash', fee: 12_345n })
+          .mockResolvedValueOnce({ hash: 'dummy-swap-hash', fee: 67_890n })
+
+        const result = await protocol.swap({
+          tokenIn: USDT,
+          tokenOut: TOKEN_OUT,
+          tokenInAmount: 100
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: USDT,
+          destToken: TOKEN_OUT,
+          amount: '100',
+          side: SwapSide.SELL
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_RESET_ALLOWANCE_TRANSACTION)
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
+
+        expect(account.sendTransaction).toHaveBeenCalledWith(DUMMY_RESET_ALLOWANCE_TRANSACTION)
+        expect(account.sendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
+        expect(account.sendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
+
+        expect(result).toEqual({
+          resetAllowanceHash: 'dummy-reset-allowance-hash',
+          approveHash: 'dummy-approve-hash',
+          hash: 'dummy-swap-hash',
+          fee: 90_111n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
       test('should throw if the swap fee exceeds the swap max fee configuration', async () => {
         const OPTIONS = {
           tokenIn: TOKEN_IN,
@@ -262,6 +341,70 @@ describe('ParaSwapProtocolEvm', () => {
         })
       })
 
+      test('should successfully quote a sell operation of usdt tokens', async () => {
+        const DUMMY_PRICE_ROUTE = {
+          srcToken: USDT,
+          destToken: TOKEN_OUT,
+          srcAmount: '100',
+          destAmount: '100000'
+        }
+
+        const DUMMY_BUILD_TX_INPUT = {
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }
+
+        const DUMMY_RESET_ALLOWANCE_TRANSACTION = {
+          to: USDT,
+          value: 0,
+          data: '0x095ea7b3000000000000000000000000f90e98f3d8dce44632e5020abf2e122e0f99dfab0000000000000000000000000000000000000000000000000000000000000000'
+        }
+
+        const DUMMY_APPROVE_TRANSACTION = {
+          to: USDT,
+          value: 0,
+          data: '0x095ea7b3000000000000000000000000f90e98f3d8dce44632e5020abf2e122e0f99dfab0000000000000000000000000000000000000000000000000000000000000064'
+        }
+
+        getRateMock.mockResolvedValue(DUMMY_PRICE_ROUTE)
+
+        account.quoteSendTransaction = jest.fn()
+          .mockResolvedValueOnce({ fee: 9_876n })
+          .mockResolvedValueOnce({ fee: 12_345n })
+          .mockResolvedValueOnce({ fee: 67_890n })
+
+        const result = await protocol.quoteSwap({
+          tokenIn: USDT,
+          tokenOut: TOKEN_OUT,
+          tokenInAmount: 100
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: USDT,
+          destToken: TOKEN_OUT,
+          amount: '100',
+          side: SwapSide.SELL
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_RESET_ALLOWANCE_TRANSACTION)
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_APPROVE_TRANSACTION)
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith(DUMMY_SWAP_TRANSACTION)
+
+        expect(result).toEqual({
+          fee: 90_111n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
       test('should throw if the account is not connected to a provider', async () => {
         const account = new WalletAccountEvm(SEED, "0'/0/0")
 
@@ -345,6 +488,66 @@ describe('ParaSwapProtocolEvm', () => {
         expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
 
         expect(account.sendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
+
+        expect(result).toEqual({
+          hash: 'dummy-user-operation-hash',
+          fee: 80_235n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
+      test('should successfully perform a sell operation of usdt tokens', async () => {
+        const DUMMY_PRICE_ROUTE = {
+          srcToken: USDT,
+          destToken: TOKEN_OUT,
+          srcAmount: '100',
+          destAmount: '100000'
+        }
+
+        const DUMMY_BUILD_TX_INPUT = {
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }
+
+        const DUMMY_RESET_ALLOWANCE_TRANSACTION = {
+          to: USDT,
+          value: 0,
+          data: '0x095ea7b3000000000000000000000000f90e98f3d8dce44632e5020abf2e122e0f99dfab0000000000000000000000000000000000000000000000000000000000000000'
+        }
+
+        const DUMMY_APPROVE_TRANSACTION = {
+          to: USDT,
+          value: 0,
+          data: '0x095ea7b3000000000000000000000000f90e98f3d8dce44632e5020abf2e122e0f99dfab0000000000000000000000000000000000000000000000000000000000000064'
+        }
+
+        getRateMock.mockResolvedValue(DUMMY_PRICE_ROUTE)
+
+        const result = await protocol.swap({
+          tokenIn: USDT,
+          tokenOut: TOKEN_OUT,
+          tokenInAmount: 100
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: USDT,
+          destToken: TOKEN_OUT,
+          amount: '100',
+          side: SwapSide.SELL
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_RESET_ALLOWANCE_TRANSACTION, DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
+
+        expect(account.sendTransaction).toHaveBeenCalledWith([DUMMY_RESET_ALLOWANCE_TRANSACTION, DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
 
         expect(result).toEqual({
           hash: 'dummy-user-operation-hash',
@@ -445,6 +648,63 @@ describe('ParaSwapProtocolEvm', () => {
         expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
 
         expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
+
+        expect(result).toEqual({
+          fee: 80_235n,
+          tokenInAmount: 100n,
+          tokenOutAmount: 100_000n
+        })
+      })
+
+      test('should successfully quote a sell operation of usdt tokens', async () => {
+        const DUMMY_PRICE_ROUTE = {
+          srcToken: USDT,
+          destToken: TOKEN_OUT,
+          srcAmount: '100',
+          destAmount: '100000'
+        }
+
+        const DUMMY_BUILD_TX_INPUT = {
+          partner: 'wdk',
+          srcToken: DUMMY_PRICE_ROUTE.srcToken,
+          destToken: DUMMY_PRICE_ROUTE.destToken,
+          srcAmount: DUMMY_PRICE_ROUTE.srcAmount,
+          destAmount: DUMMY_PRICE_ROUTE.destAmount,
+          userAddress: USER_ADDRESS,
+          receiver: undefined,
+          priceRoute: DUMMY_PRICE_ROUTE
+        }
+
+        const DUMMY_RESET_ALLOWANCE_TRANSACTION = {
+          to: USDT,
+          value: 0,
+          data: '0x095ea7b3000000000000000000000000f90e98f3d8dce44632e5020abf2e122e0f99dfab0000000000000000000000000000000000000000000000000000000000000000'
+        }
+
+        const DUMMY_APPROVE_TRANSACTION = {
+          to: USDT,
+          value: 0,
+          data: '0x095ea7b3000000000000000000000000f90e98f3d8dce44632e5020abf2e122e0f99dfab0000000000000000000000000000000000000000000000000000000000000064'
+        }
+
+        getRateMock.mockResolvedValue(DUMMY_PRICE_ROUTE)
+
+        const result = await protocol.quoteSwap({
+          tokenIn: USDT,
+          tokenOut: TOKEN_OUT,
+          tokenInAmount: 100
+        })
+
+        expect(getRateMock).toHaveBeenCalledWith({
+          srcToken: USDT,
+          destToken: TOKEN_OUT,
+          amount: '100',
+          side: SwapSide.SELL
+        })
+
+        expect(buildTxMock).toHaveBeenCalledWith(DUMMY_BUILD_TX_INPUT, { ignoreChecks: true })
+
+        expect(account.quoteSendTransaction).toHaveBeenCalledWith([DUMMY_RESET_ALLOWANCE_TRANSACTION, DUMMY_APPROVE_TRANSACTION, DUMMY_SWAP_TRANSACTION], undefined)
 
         expect(result).toEqual({
           fee: 80_235n,
