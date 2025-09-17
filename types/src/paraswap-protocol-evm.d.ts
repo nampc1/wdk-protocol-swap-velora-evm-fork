@@ -37,7 +37,7 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
      *   wallet account, overrides the 'paymasterToken' option defined in its configuration.
      * @returns {Promise<Omit<SwapResult, 'hash' | 'approveHash'>>} The swap's quotes.
      */
-    quoteSwap(options: SwapOptions, config?: Pick<EvmErc4337WalletConfig, "paymasterToken">): Promise<Omit<SwapResult, "hash" | "approveHash">>;
+    quoteSwap(options: SwapOptions, config?: Pick<EvmErc4337WalletConfig, "paymasterToken">): Promise<Omit<SwapResult, "hash" | "approveHash" | "resetAllowanceHash">>;
     /** @private */
     private _getVeloraSdk;
     /** @private */
