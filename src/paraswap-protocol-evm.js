@@ -18,26 +18,17 @@ import { SwapProtocol } from '@wdk/wallet/protocols'
 import { WalletAccountEvm } from '@wdk/wallet-evm'
 import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@wdk/wallet-evm-erc-4337'
 
-import { JsonRpcProvider, BrowserProvider, Contract } from 'ethers'
+import { JsonRpcProvider, BrowserProvider } from 'ethers'
 
 import { constructSimpleSDK } from '@velora-dex/sdk'
 
 /** @typedef {import('@wdk/wallet/protocols').SwapProtocolConfig} SwapProtocolConfig */
 /** @typedef {import('@wdk/wallet/protocols').SwapOptions} SwapOptions */
+/** @typedef {import('@wdk/wallet/protocols').SwapResult} SwapResult */
 
 /** @typedef {import('@wdk/wallet-evm').WalletAccountReadOnlyEvm} WalletAccountReadOnlyEvm */
 
 /** @typedef {import('@wdk/wallet-evm-erc-4337').EvmErc4337WalletConfig} EvmErc4337WalletConfig */
-
-/**
- * @typedef {Object} SwapResult
- * @property {string} hash - The hash of the swap operation.
- * @property {bigint} fee - The gas cost.
- * @property {bigint} tokenInAmount - The amount of input tokens sold.
- * @property {bigint} tokenOutAmount -  The amount of output tokens bought.
- */
-
-const USDT = '0xdac17f958d2ee523a2206206994597c13d831ec7'
 
 export default class ParaSwapProtocolEvm extends SwapProtocol {
   /**
@@ -190,27 +181,7 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
       ignoreChecks: true
     })
 
-    const tokenInContract = new Contract(tokenIn, ['function approve(address,uint256)'])
-
-    let resetAllowanceTx
-
-    if (veloraSdk.chainId === 1 && tokenIn.toLowerCase() === USDT) {
-      resetAllowanceTx = {
-        to: tokenIn,
-        value: 0,
-        data: await tokenInContract.interface.encodeFunctionData('approve', [swapTx.to, 0])
-      }
-    }
-
-    const approveTx = {
-      to: tokenIn,
-      value: 0,
-      data: await tokenInContract.interface.encodeFunctionData('approve', [swapTx.to, priceRoute.srcAmount])
-    }
-
     return {
-      resetAllowanceTx,
-      approveTx,
       swapTx,
       tokenInAmount: BigInt(priceRoute.srcAmount),
       tokenOutAmount: BigInt(priceRoute.destAmount)

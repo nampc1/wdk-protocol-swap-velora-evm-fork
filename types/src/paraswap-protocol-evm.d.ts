@@ -18,9 +18,11 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
     /** @private */
     private _veloraSdk;
     /** @private */
-    private _provider: JsonRpcProvider | BrowserProvider;
+    private _provider;
     /**
      * Swaps a pair of tokens.
+     * 
+     * Users must first approve the necessary amount of input tokens to the paraswap protocol using the {@link WalletAccountEvm#approve} or the {@link WalletAccountEvmErc4337#approve} method.
      *
      * @param {SwapOptions} options - The swap's options.
      * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'> & Pick<SwapProtocolConfig, 'swapMaxFee'>} [config] - If the protocol has
@@ -31,6 +33,8 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
     swap(options: SwapOptions, config?: Pick<EvmErc4337WalletConfig, "paymasterToken"> & Pick<SwapProtocolConfig, "swapMaxFee">): Promise<SwapResult>;
     /**
      * Quotes the costs of a swap operation.
+     * 
+     * Users must first approve the necessary amount of input tokens to the paraswap protocol using the {@link WalletAccountEvm#approve} or the {@link WalletAccountEvmErc4337#approve} method.
      *
      * @param {SwapOptions} options - The swap's options.
      * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'>} [config] - If the protocol has been initialized with an erc-4337
@@ -45,29 +49,9 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
 }
 export type SwapProtocolConfig = import("@wdk/wallet/protocols").SwapProtocolConfig;
 export type SwapOptions = import("@wdk/wallet/protocols").SwapOptions;
+export type SwapResult = import("@wdk/wallet/protocols").SwapResult;
 export type WalletAccountReadOnlyEvm = import("@wdk/wallet-evm").WalletAccountReadOnlyEvm;
 export type EvmErc4337WalletConfig = import("@wdk/wallet-evm-erc-4337").EvmErc4337WalletConfig;
-export type SwapResult = {
-    /**
-     * - The hash of the swap operation.
-     */
-    hash: string;
-    /**
-     * - The gas cost.
-     */
-    fee: bigint;
-    /**
-     * - The amount of input tokens sold.
-     */
-    tokenInAmount: bigint;
-    /**
-     * -  The amount of output tokens bought.
-     */
-    tokenOutAmount: bigint;
-};
 import { SwapProtocol } from '@wdk/wallet/protocols';
-import { JsonRpcProvider } from 'ethers';
-import { BrowserProvider } from 'ethers';
-import { WalletAccountReadOnlyEvmErc4337 } from '@wdk/wallet-evm-erc-4337';
 import { WalletAccountEvm } from '@wdk/wallet-evm';
-import { WalletAccountEvmErc4337 } from '@wdk/wallet-evm-erc-4337';
+import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@wdk/wallet-evm-erc-4337';
