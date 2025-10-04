@@ -35,13 +35,6 @@ import { constructSimpleSDK } from '@velora-dex/sdk'
  * @property {bigint} fee - The gas cost.
  * @property {bigint} tokenInAmount - The amount of input tokens sold.
  * @property {bigint} tokenOutAmount -  The amount of output tokens bought.
- * @property {string} [approveHash] - If the protocol has been initialized with a standard wallet account, this field will contain the hash
- *   of the approve call to allow paraswap to transfer the input tokens. If the protocol has been initialized with an erc-4337 wallet account,
- *   this field will be undefined (since the approve call will be bundled in the user operation with hash {@link SwapResult#hash}).
- * @property {string} [resetAllowanceHash] - If the swap operation has been performed on ethereum mainnet by selling usdt tokens, this field will
- *   contain the hash of the approve call that resets the allowance of the paraswap protocol to zero (due to the usdt allowance reset requirement).
- *   If the protocol has been initialized with an erc-4337 wallet account, this field will be undefined (since the approve call will be bundled in
- *   the user operation with hash {@link SwapResult#hash}).
  */
 
 const USDT = '0xdac17f958d2ee523a2206206994597c13d831ec7'
@@ -81,6 +74,8 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
   /**
    * Swaps a pair of tokens.
    *
+   * Users must first approve the necessary amount of input tokens to the paraswap protocol using the {@link WalletAccountEvm#approve} or the {@link WalletAccountEvmErc4337#approve} method.
+   *
    * @param {SwapOptions} options - The swap's options.
    * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'> & Pick<SwapProtocolConfig, 'swapMaxFee'>} [config] - If the protocol has
    *   been initialized with an erc-4337 wallet account, overrides the 'paymasterToken' option defined in its configuration and the
@@ -96,85 +91,59 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
       throw new Error('The wallet must be connected to a provider in order to perform swap operations.')
     }
 
-    const { resetAllowanceTx, approveTx, swapTx, tokenInAmount, tokenOutAmount } = await this._getSwapTransactions(options)
+    const { swapTx, tokenInAmount, tokenOutAmount } = await this._getSwapTransactions(options)
 
     if (this._account instanceof WalletAccountEvmErc4337) {
       const { swapMaxFee } = config ?? this._config
 
-      const transactions = resetAllowanceTx ? [resetAllowanceTx, approveTx, swapTx] : [approveTx, swapTx]
-
-      const { fee } = await this._account.quoteSendTransaction(transactions, config)
+      const { fee } = await this._account.quoteSendTransaction([swapTx], config)
 
       if (swapMaxFee !== undefined && fee >= swapMaxFee) {
         throw new Error('Exceeded maximum fee cost for swap operation.')
       }
 
-      const { hash } = await this._account.sendTransaction(transactions, config)
+      const { hash } = await this._account.sendTransaction([swapTx], config)
 
       return { hash, fee, tokenInAmount, tokenOutAmount }
     }
 
-    const { fee: resetAllowanceFee } = resetAllowanceTx
-      ? await this._account.quoteSendTransaction(resetAllowanceTx)
-      : { fee: 0n }
-
-    const { fee: approveFee } = await this._account.quoteSendTransaction(approveTx)
-
-    const { fee: swapFee } = await this._account.quoteSendTransaction(swapTx)
-
-    const fee = resetAllowanceFee + approveFee + swapFee
+    const { fee } = await this._account.quoteSendTransaction(swapTx)
 
     if (this._config.swapMaxFee !== undefined && fee >= this._config.swapMaxFee) {
       throw new Error('Exceeded maximum fee cost for swap operation.')
     }
 
-    const { hash: resetAllowanceHash } = resetAllowanceTx
-      ? await this._account.sendTransaction(resetAllowanceTx)
-      : { hash: undefined }
-
-    const { hash: approveHash } = await this._account.sendTransaction(approveTx)
-
     const { hash } = await this._account.sendTransaction(swapTx)
 
-    return { resetAllowanceHash, approveHash, hash, fee, tokenInAmount, tokenOutAmount }
+    return { hash, fee, tokenInAmount, tokenOutAmount }
   }
 
   /**
    * Quotes the costs of a swap operation.
    *
+   * Users must first approve the necessary amount of input tokens to the paraswap protocol using the {@link WalletAccountEvm#approve} or the {@link WalletAccountEvmErc4337#approve} method.
+   *
    * @param {SwapOptions} options - The swap's options.
    * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'>} [config] - If the protocol has been initialized with an erc-4337
    *   wallet account, overrides the 'paymasterToken' option defined in its configuration.
-   * @returns {Promise<Omit<SwapResult, 'hash' | 'approveHash' | 'resetAllowanceHash'>>} The swap's quotes.
+   * @returns {Promise<Omit<SwapResult, 'hash'>>} The swap's quotes.
    */
   async quoteSwap (options, config) {
     if (!this._provider) {
       throw new Error('The wallet must be connected to a provider in order to quote swap operations.')
     }
 
-    const { resetAllowanceTx, approveTx, swapTx, tokenInAmount, tokenOutAmount } = await this._getSwapTransactions(options)
+    const { swapTx, tokenInAmount, tokenOutAmount } = await this._getSwapTransactions(options)
 
     if (this._account instanceof WalletAccountReadOnlyEvmErc4337) {
-      const transactions = resetAllowanceTx ? [resetAllowanceTx, approveTx, swapTx] : [approveTx, swapTx]
-
-      const { fee } = await this._account.quoteSendTransaction(transactions, config)
+      const { fee } = await this._account.quoteSendTransaction([swapTx], config)
 
       return { fee, tokenInAmount, tokenOutAmount }
     }
 
-    const { fee: resetAllowanceFee } = resetAllowanceTx
-      ? await this._account.quoteSendTransaction(resetAllowanceTx)
-      : { fee: 0n }
+    const { fee } = await this._account.quoteSendTransaction(swapTx)
 
-    const { fee: approveFee } = await this._account.quoteSendTransaction(approveTx)
-
-    const { fee: swapFee } = await this._account.quoteSendTransaction(swapTx)
-
-    return {
-      fee: resetAllowanceFee + approveFee + swapFee,
-      tokenInAmount,
-      tokenOutAmount
-    }
+    return { fee, tokenInAmount, tokenOutAmount }
   }
 
   /** @private */
