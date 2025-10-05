@@ -1,8 +1,8 @@
-# @tetherto/wdk-protocol-swap-paraswap-evm
+# @tetherto/wdk-protocol-swap-velora-evm
 
 **Note**: This package is currently in beta. Please test thoroughly in development environments before using in production.
 
-A secure and straightforward package that lets EVM wallet accounts swap tokens using the ParaSwap aggregator. This package provides a clean SDK for token swaps on EVM chains, supporting both standard wallets and ERC-4337 smart accounts.
+A secure and straightforward package that lets EVM wallet accounts swap tokens using the Velora aggregator. This package provides a clean SDK for token swaps on EVM chains, supporting both standard wallets and ERC-4337 smart accounts.
 
 This module can be managed by the [`@tetherto/wdk`](https://github.com/tetherto/wdk-core) suite, which provides a unified interface for managing multiple WDK wallet and protocol modules across different blockchains.
 
@@ -14,7 +14,7 @@ For documentation on the complete WDK ecosystem, see https://docs.wallet.tether.
 
 ## 🌟 Features
 
-- Token Swapping via ParaSwap
+- Token Swapping via Valora Dex
 - Account Abstraction: Works with standard EVM wallets and ERC‑4337 smart accounts
 - Fee Controls: Optional `swapMaxFee` to cap gas costs
 - USDT Mainnet Handling: Allowance reset to 0 before approve when needed
@@ -24,7 +24,7 @@ For documentation on the complete WDK ecosystem, see https://docs.wallet.tether.
 ## ⬇️ Installation
 
 ```bash
-npm install @tetherto/wdk-protocol-swap-paraswap-evm
+npm install @tetherto/wdk-protocol-swap-velora-evm
 ```
 
 ## 🚀 Quick Start
@@ -32,7 +32,7 @@ npm install @tetherto/wdk-protocol-swap-paraswap-evm
 ### Direct Usage
 
 ```javascript
-import ParaSwapProtocolEvm from '@tetherto/wdk-protocol-swap-paraswap-evm'
+import ParaSwapProtocolEvm from '@tetherto/wdk-protocol-swap-velora-evm'
 import { WalletAccountEvm } from '@tetherto/wdk-wallet-evm'
 
 const seed = 'test only example nut use this real life secret phrase must random'
