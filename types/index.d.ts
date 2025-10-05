@@ -1,4 +1,4 @@
 export { default } from "./src/paraswap-protocol-evm.js";
-export type SwapProtocolConfig = import("@wdk/wallet/protocols").SwapProtocolConfig;
-export type SwapOptions = import("@wdk/wallet/protocols").SwapOptions;
-export type SwapResult = import("@wdk/wallet/protocols").SwapResult;
+export type SwapProtocolConfig = import("@tetherto/wdk-wallet/protocols").SwapProtocolConfig;
+export type SwapOptions = import("@tetherto/wdk-wallet/protocols").SwapOptions;
+export type SwapResult = import("@tetherto/wdk-wallet/protocols").SwapResult;
