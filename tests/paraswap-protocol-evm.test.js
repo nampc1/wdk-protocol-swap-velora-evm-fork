@@ -4,9 +4,9 @@ import * as ethers from 'ethers'
 
 import * as veloraDexSdk from '@velora-dex/sdk'
 
-import { WalletAccountEvm, WalletAccountReadOnlyEvm } from '@wdk/wallet-evm'
+import { WalletAccountEvm, WalletAccountReadOnlyEvm } from '@tetherto/wdk-wallet-evm'
 
-import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@wdk/wallet-evm-erc-4337'
+import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@tetherto/wdk-wallet-evm-erc-4337'
 
 const { SwapSide } = veloraDexSdk
 

@@ -14,21 +14,21 @@
 
 'use strict'
 
-import { SwapProtocol } from '@wdk/wallet/protocols'
-import { WalletAccountEvm } from '@wdk/wallet-evm'
-import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@wdk/wallet-evm-erc-4337'
+import { SwapProtocol } from '@tetherto/wdk-wallet/protocols'
+import { WalletAccountEvm } from '@tetherto/wdk-wallet-evm'
+import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@tetherto/wdk-wallet-evm-erc-4337'
 
 import { JsonRpcProvider, BrowserProvider } from 'ethers'
 
 import { constructSimpleSDK } from '@velora-dex/sdk'
 
-/** @typedef {import('@wdk/wallet/protocols').SwapProtocolConfig} SwapProtocolConfig */
-/** @typedef {import('@wdk/wallet/protocols').SwapOptions} SwapOptions */
-/** @typedef {import('@wdk/wallet/protocols').SwapResult} SwapResult */
+/** @typedef {import('@tetherto/wdk-wallet/protocols').SwapProtocolConfig} SwapProtocolConfig */
+/** @typedef {import('@tetherto/wdk-wallet/protocols').SwapOptions} SwapOptions */
+/** @typedef {import('@tetherto/wdk-wallet/protocols').SwapResult} SwapResult */
 
-/** @typedef {import('@wdk/wallet-evm').WalletAccountReadOnlyEvm} WalletAccountReadOnlyEvm */
+/** @typedef {import('@tetherto/wdk-wallet-evm').WalletAccountReadOnlyEvm} WalletAccountReadOnlyEvm */
 
-/** @typedef {import('@wdk/wallet-evm-erc-4337').EvmErc4337WalletConfig} EvmErc4337WalletConfig */
+/** @typedef {import('@tetherto/wdk-wallet-evm-erc-4337').EvmErc4337WalletConfig} EvmErc4337WalletConfig */
 
 export default class ParaSwapProtocolEvm extends SwapProtocol {
   /**

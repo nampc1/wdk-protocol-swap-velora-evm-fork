@@ -47,11 +47,11 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
     /** @private */
     private _getSwapTransactions;
 }
-export type SwapProtocolConfig = import("@wdk/wallet/protocols").SwapProtocolConfig;
-export type SwapOptions = import("@wdk/wallet/protocols").SwapOptions;
-export type SwapResult = import("@wdk/wallet/protocols").SwapResult;
-export type WalletAccountReadOnlyEvm = import("@wdk/wallet-evm").WalletAccountReadOnlyEvm;
-export type EvmErc4337WalletConfig = import("@wdk/wallet-evm-erc-4337").EvmErc4337WalletConfig;
-import { SwapProtocol } from '@wdk/wallet/protocols';
-import { WalletAccountEvm } from '@wdk/wallet-evm';
-import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@wdk/wallet-evm-erc-4337';
+export type SwapProtocolConfig = import("@tetherto/wdk-wallet/protocols").SwapProtocolConfig;
+export type SwapOptions = import("@tetherto/wdk-wallet/protocols").SwapOptions;
+export type SwapResult = import("@tetherto/wdk-wallet/protocols").SwapResult;
+export type WalletAccountReadOnlyEvm = import("@tetherto/wdk-wallet-evm").WalletAccountReadOnlyEvm;
+export type EvmErc4337WalletConfig = import("@tetherto/wdk-wallet-evm-erc-4337").EvmErc4337WalletConfig;
+import { SwapProtocol } from '@tetherto/wdk-wallet/protocols';
+import { WalletAccountEvm } from '@tetherto/wdk-wallet-evm';
+import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@tetherto/wdk-wallet-evm-erc-4337';

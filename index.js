@@ -14,10 +14,10 @@
 
 'use strict'
 
-/** @typedef {import('@wdk/wallet/protocols').SwapProtocolConfig} SwapProtocolConfig */
+/** @typedef {import('@tetherto/wdk-wallet/protocols').SwapProtocolConfig} SwapProtocolConfig */
 
-/** @typedef {import('@wdk/wallet/protocols').SwapOptions} SwapOptions */
+/** @typedef {import('@tetherto/wdk-wallet/protocols').SwapOptions} SwapOptions */
 
-/** @typedef {import('@wdk/wallet/protocols').SwapResult} SwapResult */
+/** @typedef {import('@tetherto/wdk-wallet/protocols').SwapResult} SwapResult */
 
 export { default } from './src/paraswap-protocol-evm.js'
