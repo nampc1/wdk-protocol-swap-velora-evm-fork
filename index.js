@@ -20,4 +20,4 @@
 
 /** @typedef {import('@tetherto/wdk-wallet/protocols').SwapResult} SwapResult */
 
-export { default } from './src/paraswap-protocol-evm.js'
+export { default } from './src/velora-protocol-evm.js'

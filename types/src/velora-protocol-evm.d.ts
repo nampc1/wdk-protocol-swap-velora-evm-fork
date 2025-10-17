@@ -1,6 +1,6 @@
-export default class ParaSwapProtocolEvm extends SwapProtocol {
+export default class VeloraProtocolEvm extends SwapProtocol {
     /**
-     * Creates a new read-only interface to the paraswap protocol for evm blockchains.
+     * Creates a new read-only interface to the Velora protocol for evm blockchains.
      *
      * @overload
      * @param {WalletAccountReadOnlyEvm | WalletAccountReadOnlyEvmErc4337} account - The wallet account to use to interact with the protocol.
@@ -8,7 +8,7 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
      */
     constructor(account: WalletAccountReadOnlyEvm | WalletAccountReadOnlyEvmErc4337, config?: SwapProtocolConfig);
     /**
-     * Creates a new interface to the paraswap protocol for evm blockchains.
+     * Creates a new interface to the Velora protocol for evm blockchains.
      *
      * @overload
      * @param {WalletAccountEvm | WalletAccountEvmErc4337} account - The wallet account to use to interact with the protocol.
@@ -21,8 +21,8 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
     private _provider;
     /**
      * Swaps a pair of tokens.
-     * 
-     * Users must first approve the necessary amount of input tokens to the paraswap protocol using the {@link WalletAccountEvm#approve} or the {@link WalletAccountEvmErc4337#approve} method.
+     *
+     * Users must first approve the necessary amount of input tokens to the Velora protocol using the {@link WalletAccountEvm#approve} or the {@link WalletAccountEvmErc4337#approve} method.
      *
      * @param {SwapOptions} options - The swap's options.
      * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'> & Pick<SwapProtocolConfig, 'swapMaxFee'>} [config] - If the protocol has
@@ -33,8 +33,8 @@ export default class ParaSwapProtocolEvm extends SwapProtocol {
     swap(options: SwapOptions, config?: Pick<EvmErc4337WalletConfig, "paymasterToken"> & Pick<SwapProtocolConfig, "swapMaxFee">): Promise<SwapResult>;
     /**
      * Quotes the costs of a swap operation.
-     * 
-     * Users must first approve the necessary amount of input tokens to the paraswap protocol using the {@link WalletAccountEvm#approve} or the {@link WalletAccountEvmErc4337#approve} method.
+     *
+     * Users must first approve the necessary amount of input tokens to the Velora protocol using the {@link WalletAccountEvm#approve} or the {@link WalletAccountEvmErc4337#approve} method.
      *
      * @param {SwapOptions} options - The swap's options.
      * @param {Pick<EvmErc4337WalletConfig, 'paymasterToken'>} [config] - If the protocol has been initialized with an erc-4337
@@ -54,4 +54,4 @@ export type WalletAccountReadOnlyEvm = import("@tetherto/wdk-wallet-evm").Wallet
 export type EvmErc4337WalletConfig = import("@tetherto/wdk-wallet-evm-erc-4337").EvmErc4337WalletConfig;
 import { SwapProtocol } from '@tetherto/wdk-wallet/protocols';
 import { WalletAccountEvm } from '@tetherto/wdk-wallet-evm';
-import { WalletAccountEvmErc4337, WalletAccountReadOnlyEvmErc4337 } from '@tetherto/wdk-wallet-evm-erc-4337';
+import { WalletAccountReadOnlyEvmErc4337, WalletAccountEvmErc4337 } from '@tetherto/wdk-wallet-evm-erc-4337';
