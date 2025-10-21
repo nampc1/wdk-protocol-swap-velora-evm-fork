@@ -16,7 +16,7 @@ const USER_ADDRESS = '0xa460AEbce0d3A4BecAd8ccf9D6D4861296c503Bd'
 
 const TOKEN_IN = '0x9e6b38E072f624fdC4Fbaf7bB12a7D9e657435ce'
 const TOKEN_OUT = '0x73091d62F1F11DCb172530126E9630e327770e05'
-const PARASWAP = '0xf90e98F3D8Dce44632E5020ABF2E122E0f99DFAb'
+const VELORA = '0xf90e98F3D8Dce44632E5020ABF2E122E0f99DFAb'
 
 const getRateMock = jest.fn()
 
@@ -40,9 +40,9 @@ jest.unstable_mockModule('@velora-dex/sdk', () => ({
   })
 }))
 
-const { default: ParaSwapProtocolEvm } = await import('../index.js')
+const { default: VeloraProtocolEvm } = await import('../index.js')
 
-describe('ParaSwapProtocolEvm', () => {
+describe('VeloraSwapProtocolEvm', () => {
   const DUMMY_PRICE_ROUTE = {
     srcToken: TOKEN_IN,
     destToken: TOKEN_OUT,
@@ -62,7 +62,7 @@ describe('ParaSwapProtocolEvm', () => {
   }
 
   const DUMMY_SWAP_TRANSACTION = {
-    to: PARASWAP,
+    to: VELORA,
     value: 0,
     data: 'dummy-swap-method-data'
   }
@@ -78,7 +78,7 @@ describe('ParaSwapProtocolEvm', () => {
 
       account.getAddress = jest.fn().mockResolvedValue(USER_ADDRESS)
 
-      protocol = new ParaSwapProtocolEvm(account)
+      protocol = new VeloraProtocolEvm(account)
     })
 
     describe('swap', () => {
@@ -157,7 +157,7 @@ describe('ParaSwapProtocolEvm', () => {
           tokenOutAmount: 100_000
         }
 
-        const protocol = new ParaSwapProtocolEvm(account, {
+        const protocol = new VeloraProtocolEvm(account, {
           swapMaxFee: 0
         })
 
@@ -170,7 +170,7 @@ describe('ParaSwapProtocolEvm', () => {
           provider: 'https://mock-rpc-url.com'
         })
 
-        const protocol = new ParaSwapProtocolEvm(account)
+        const protocol = new VeloraProtocolEvm(account)
 
         await expect(protocol.swap({ }))
           .rejects.toThrow("The 'swap(options)' method requires the protocol to be initialized with a non read-only account.")
@@ -179,7 +179,7 @@ describe('ParaSwapProtocolEvm', () => {
       test('should throw if the account is not connected to a provider', async () => {
         const account = new WalletAccountEvm(SEED, "0'/0/0")
 
-        const protocol = new ParaSwapProtocolEvm(account)
+        const protocol = new VeloraProtocolEvm(account)
 
         await expect(protocol.swap({ }))
           .rejects.toThrow('The wallet must be connected to a provider in order to perform swap operations.')
@@ -249,7 +249,7 @@ describe('ParaSwapProtocolEvm', () => {
       test('should throw if the account is not connected to a provider', async () => {
         const account = new WalletAccountEvm(SEED, "0'/0/0")
 
-        const protocol = new ParaSwapProtocolEvm(account)
+        const protocol = new VeloraProtocolEvm(account)
 
         await expect(protocol.quoteSwap({ }))
           .rejects.toThrow('The wallet must be connected to a provider in order to quote swap operations.')
@@ -266,7 +266,7 @@ describe('ParaSwapProtocolEvm', () => {
 
       account.getAddress = jest.fn().mockResolvedValue(USER_ADDRESS)
 
-      protocol = new ParaSwapProtocolEvm(account)
+      protocol = new VeloraProtocolEvm(account)
     })
 
     describe('swap', () => {
@@ -345,7 +345,7 @@ describe('ParaSwapProtocolEvm', () => {
           tokenOutAmount: 100_000
         }
 
-        const protocol = new ParaSwapProtocolEvm(account, {
+        const protocol = new VeloraProtocolEvm(account, {
           swapMaxFee: 0
         })
 
@@ -359,7 +359,7 @@ describe('ParaSwapProtocolEvm', () => {
           provider: 'https://mock-rpc-url.com'
         })
 
-        const protocol = new ParaSwapProtocolEvm(account)
+        const protocol = new VeloraProtocolEvm(account)
 
         await expect(protocol.swap({ }))
           .rejects.toThrow("The 'swap(options)' method requires the protocol to be initialized with a non read-only account.")
@@ -370,7 +370,7 @@ describe('ParaSwapProtocolEvm', () => {
           chainId: 1
         })
 
-        const protocol = new ParaSwapProtocolEvm(account)
+        const protocol = new VeloraProtocolEvm(account)
 
         await expect(protocol.swap({ }))
           .rejects.toThrow('The wallet must be connected to a provider in order to perform swap operations.')
@@ -442,7 +442,7 @@ describe('ParaSwapProtocolEvm', () => {
           chainId: 1
         })
 
-        const protocol = new ParaSwapProtocolEvm(account)
+        const protocol = new VeloraProtocolEvm(account)
 
         await expect(protocol.quoteSwap({ }))
           .rejects.toThrow('The wallet must be connected to a provider in order to quote swap operations.')
